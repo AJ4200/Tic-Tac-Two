@@ -5,6 +5,6 @@ const inter = Inter({ subsets: ['latin'] })
 
 export default function Home() {
   return (
-    <><TicTacTwo/></>
+    <><TicTacTwo/><audio autoPlay={true} muted={false} src='Loli.mp3'/></>
   )
 }
