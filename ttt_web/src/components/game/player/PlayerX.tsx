@@ -1,0 +1,41 @@
+// components/game/PlayerX.tsx
+import classnames from "classnames";
+import React from "react";
+
+interface PlayerXProps {
+  alias: string;
+  picture: string;
+  wins: number;
+  losses: number;
+  draws: number;
+  mood: string;
+}
+
+const PlayerX: React.FC<PlayerXProps> = ({
+  alias,
+  picture,
+  wins,
+  losses,
+  draws,
+  mood,
+}) => (
+  <div className={classnames("fixed left-10 flex-col", "player plx")}>
+    <div>
+      <img
+        src={picture}
+        alt={`${alias}'s Picture`}
+        className="player-picture"
+      />{" "}
+      <p className="bg-black p-1 w-full">
+        W: {wins} - L: {losses} - D: {draws}
+      </p>
+    </div>
+    <div className="mt-2 shadow-lg">
+      <p>
+        X : {alias} : {mood}
+      </p>
+    </div>
+  </div>
+);
+
+export default PlayerX;

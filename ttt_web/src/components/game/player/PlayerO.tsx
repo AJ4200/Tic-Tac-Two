@@ -1,0 +1,41 @@
+// components/game/PlayerO.tsx
+import classnames from "classnames";
+import React from "react";
+
+interface PlayerOProps {
+  alias: string;
+  picture: string;
+  wins: number;
+  losses: number;
+  draws: number;
+  mood: string;
+}
+
+const PlayerO: React.FC<PlayerOProps> = ({
+  alias,
+  picture,
+  wins,
+  losses,
+  draws,
+  mood,
+}) => (
+  <div className={classnames("fixed right-10 flex-col", "player plo")}>
+    <div>
+      <img
+        src={picture}
+        alt={`${alias}'s Picture`}
+        className="player-picture"
+      />{" "}
+      <p className="bg-black p-1 w-full">
+        W: {wins} - L: {losses} - D: {draws}
+      </p>
+    </div>
+    <div>
+      <p>
+        O : {alias} : {mood}
+      </p>
+    </div>
+  </div>
+);
+
+export default PlayerO;

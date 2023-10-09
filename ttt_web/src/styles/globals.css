@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css?family=Luckiest+Guy&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -18,10 +20,135 @@
 
 body {
   color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+
+  font-family: "Luckiest Guy", cursive;
+}
+/* Add these styles to your CSS or SCSS file */
+
+.square {
+  border: 10px solid;
+  float: left;
+  font-size: 24px;
+  font-weight: bold;
+  line-height: 160px;
+  height: 160px;
+  margin-right: -1px;
+  margin-top: -1px;
+  padding: 0;
+  text-align: center;
+  width: 160px;
+}
+
+.status {
+  margin-bottom: 10px;
+  text-shadow: 0 0.1em 20px black, 0.05em -0.03em 0 black,
+    0.05em 0.005em 0 black, 0em 0.08em 0 black, 0.05em 0.08em 0 black,
+    0px -0.03em 0 black, -0.03em -0.03em 0 black, -0.03em 0.08em 0 black,
+    -0.03em 0 0 black;
+}
+
+.board-row:after {
+  clear: both;
+  content: "";
+  display: table;
+}
+
+.board {
+  margin-top: 20px;
+  box-shadow: 6px 8px 6px 1px rgba(0, 0, 0, 0.48);
+  transform: scaleX(1) scaleY(1) scaleZ(1) rotateX(-14deg) rotateY(-9deg)
+    rotateZ(-9deg) translateX(0px) translateY(0px) translateZ(27px) skewX(-7deg)
+    skewY(10deg);
+  animation: hoverAnimation 7s infinite;
+}
+
+.marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 70px;
+  font-weight: bold;
+  height: 160px;
+  width: 160px;
+}
+
+.x {
+  color: #f55; /* Green color for 'X' */
+  text-shadow: 0 0.1em 20px black, 0.05em -0.03em 0 black,
+    0.05em 0.005em 0 black, 0em 0.08em 0 black, 0.05em 0.08em 0 black,
+    0px -0.03em 0 black, -0.03em -0.03em 0 black, -0.03em 0.08em 0 black,
+    -0.03em 0 0 black;
+}
+
+.o {
+  color: #55f; /* Blue color for 'O' */
+  text-shadow: 0 0.1em 20px black, 0.05em -0.03em 0 black,
+    0.05em 0.005em 0 black, 0em 0.08em 0 black, 0.05em 0.08em 0 black,
+    0px -0.03em 0 black, -0.03em -0.03em 0 black, -0.03em 0.08em 0 black,
+    -0.03em 0 0 black;
+}
+
+/* Add these styles to your CSS or SCSS file */
+
+.player {
+  display: flex;
+  margin-top: 20px;
+  padding: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border: 10px solid;
+transform: skewX(-5deg);
+ animation: playerAnimation 5s infinite;
+}
+.plx
+{
+  border-color: #f55;
+    text-shadow: 0 0.1em 20px black, 0.05em -0.03em 0 black,
+    0.05em 0.005em 0 black, 0em 0.08em 0 black, 0.05em 0.08em 0 black,
+    0px -0.03em 0 black, -0.03em -0.03em 0 black, -0.03em 0.08em 0 black,
+    -0.03em 0 0 black;
+}
+.plo
+{
+  border-color: #55f;
+    text-shadow: 0 0.1em 20px black, 0.05em -0.03em 0 black,
+    0.05em 0.005em 0 black, 0em 0.08em 0 black, 0.05em 0.08em 0 black,
+    0px -0.03em 0 black, -0.03em -0.03em 0 black, -0.03em 0.08em 0 black,
+    -0.03em 0 0 black;
+}
+.player div {
+  flex: 1;
+}
+
+.player p {
+  margin: 5px 0;
+}
+
+.player-picture {
+  border-radius: 50%;
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+}
+
+
+@keyframes hoverAnimation {
+  0%,
+  100% {
+    transform: scaleX(1) scaleY(1) scaleZ(1) rotateX(-14deg) rotateY(-9deg)
+      rotateZ(-9deg) translateX(0px) translateY(0px) translateZ(27px)
+      skewX(-7deg) skewY(10deg);
+  }
+  50% {
+    transform: translateY(-12px) translateX(6px) translateZ(20px) skewX(0deg)
+      skewY(-5deg);
+  }
+}
+@keyframes playerAnimation {
+  0%,
+  100% {
+    transform: skewX(-5deg) translateY(0px);
+  }
+  50% {
+    transform:skewX(-5deg) translateY(15px)  ;
+  }
 }
