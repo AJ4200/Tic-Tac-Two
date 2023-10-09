@@ -54,6 +54,17 @@ const TicTacTwo: React.FC = () => {
         >
           Become a contributor
         </motion.a>
+             <motion.a
+          href="https://github.com/AJ4200/Tic-Tac-Two"
+          whileHover={{ scale: 0.95 }}
+          whileTap={{ scale: 1.1 }}
+          className={classnames(
+            "cursor-pointer custome-shadow text-transparent",
+            "mt-16 p-2 border-none rounded-full"
+          )}
+        >
+         Try Dev Demo
+        </motion.a>
       </div>
       <span className="fixed bottom-1 text-sm">Project By AJ4200 © 2023</span>
     </div>
