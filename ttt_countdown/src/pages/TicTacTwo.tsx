@@ -43,17 +43,7 @@ const TicTacTwo: React.FC = () => {
         >
           Comming Soon
         </motion.span>
-        <motion.a
-          href="https://github.com/AJ4200/Tic-Tac-Two"
-          whileHover={{ scale: 0.95 }}
-          whileTap={{ scale: 1.1 }}
-          className={classnames(
-            "cursor-pointer custome-shadow text-transparent",
-            "mt-16 p-2 border-none rounded-full"
-          )}
-        >
-          Become a contributor
-        </motion.a>
+  
         <motion.a
           href="https://tic-tac-two-demo.vercel.app/"
           whileHover={{ scale: 0.95 }}
@@ -63,7 +53,17 @@ const TicTacTwo: React.FC = () => {
             "mt-16 p-2 border-none rounded-full"
           )}
         >
-          Try Dev Demo
+          Play Demo
+        </motion.a>      <motion.a
+          href="https://github.com/AJ4200/Tic-Tac-Two"
+          whileHover={{ scale: 0.95 }}
+          whileTap={{ scale: 1.1 }}
+          className={classnames(
+            "cursor-pointer custome-shadow text-transparent",
+            "mt-16 p-2 border-none rounded-full"
+          )}
+        >
+          Become a contributor
         </motion.a>
       </div>
       <span className="fixed bottom-1 text-sm">Project By AJ4200 © 2023</span>
