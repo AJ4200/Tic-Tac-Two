@@ -10,6 +10,7 @@ export default function Home() {
     >
       <span className='fixed top-0 text-black'>Dev Demo</span>
       <TicTacToe />
+      <audio autoPlay={true} muted={false} src='Loli.mp3'/>
     </main>
   );
 }
