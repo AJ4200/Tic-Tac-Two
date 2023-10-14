@@ -99,7 +99,16 @@ body {
   border-radius: 50%;
   padding: 1rem;
 }
-
+.mute
+{
+    text-shadow: 0 0.1em 20px black, 0.05em -0.03em 0 black,
+    0.05em 0.005em 0 black, 0em 0.08em 0 black, 0.05em 0.08em 0 black,
+    0px -0.03em 0 black, -0.03em -0.03em 0 black, -0.03em 0.08em 0 black,
+    -0.03em 0 0 black;
+  animation: playerAnimation 5s infinite;
+  border-radius: 50%;
+  padding: 1rem;
+}
 /* Add these styles to your CSS or SCSS file */
 
 .player {

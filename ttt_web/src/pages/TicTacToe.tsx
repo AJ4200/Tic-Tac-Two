@@ -4,7 +4,8 @@ import X from "../components/game/X";
 import O from "../components/game/O";
 import PlayerO from "@/components/game/player/PlayerO";
 import PlayerX from "@/components/game/player/PlayerX";
-import { AiOutlineReload } from "react-icons/ai";
+import { AiOutlineReload, AiOutlineSound } from "react-icons/ai";
+
 import { IconContext } from "react-icons";
 import { motion } from "framer-motion";
 
@@ -31,13 +32,18 @@ const calculateWinner = (squares: Array<string | null>): string | null => {
   return null;
 };
 const buttonVariants = {
-  initial: { boxShadow: "0px 0px 0px rgba(0, 0, 0, 0)" },
+  initial: { boxShadow: "0px 0px 5px rgba(0, 0, 0, 0.1)" },
   hover: { scale: 1.1, boxShadow: "0px 0px 15px rgba(0, 0, 0, 0.2)" },
   pressed: { scale: 0.9, boxShadow: "0px 0px 5px rgba(0, 0, 0, 0.2)" },
 };
 const TicTacToe: React.FC = () => {
   const [squares, setSquares] = useState<Array<string | null>>(initialBoard);
   const [xIsNext, setXIsNext] = useState<boolean>(true);
+  const [isMuted, setIsMuted] = useState(false);
+
+  const toggleMute = () => {
+    setIsMuted(!isMuted);
+  };
 
   const handleClick = (i: number): void => {
     if (squares[i] || calculateWinner(squares)) {
@@ -105,6 +111,23 @@ const TicTacToe: React.FC = () => {
             </IconContext.Provider>
             restart
           </motion.button>
+          <motion.button
+            className="mute"
+            onClick={toggleMute}
+            variants={buttonVariants}
+            initial="initial"
+            whileHover="hover"
+            whileTap="pressed"
+          >
+            <IconContext.Provider
+              value={{ size: "1.5em", style: { marginRight: "5px" } }}
+            >
+              <div className="flex ">
+                <AiOutlineSound /> {isMuted ? <p>🚫</p> : ""}
+              </div>
+            </IconContext.Provider>
+            mute
+          </motion.button>
         </div>
       </div>
       <PlayerX
@@ -123,6 +146,7 @@ const TicTacToe: React.FC = () => {
         draws={2}
         mood="☹️"
       />
+      <audio autoPlay={true} muted={isMuted} src="Loli.mp3" />
     </>
   );
 };

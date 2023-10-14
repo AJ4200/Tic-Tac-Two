@@ -26,9 +26,11 @@ const PlayerO: React.FC<PlayerOProps> = ({
         alt={`${alias}'s Picture`}
         className="player-picture"
       />{" "}
-      <p className="bg-black p-1 w-full">
-        W: {wins} - L: {losses} - D: {draws}
-      </p>
+      <div className="bg-black p-1 w-full">
+        <span className="text-green-700">W: {wins}</span> - {" "}
+        <span className="text-red-700">L: {losses}</span> - {" "}
+        <span >D: {draws}</span> 
+      </div>
     </div>
     <div>
       <p>
