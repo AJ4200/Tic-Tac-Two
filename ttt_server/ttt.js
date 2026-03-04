@@ -1,100 +1,242 @@
-const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
-const path = require('path');
+const express = require("express");
+const crypto = require("crypto");
 
 const app = express();
-const server = http.createServer(app);
-const io = new Server(server);
-
-const PORT = 3000;
+const PORT = process.env.PORT || 4000;
 
 const rooms = new Map();
 
-function createRoom(room){
-  if(!rooms.has(room)){
-    rooms.set(room,{
-      players:[],
-      symbols:{},
-      board:Array(9).fill(null),
-      turn:'X',
-      status:'waiting',
-      winner:null
+app.use(express.json());
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", process.env.CORS_ORIGIN || "*");
+  res.header("Access-Control-Allow-Headers", "Content-Type");
+  res.header("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(204);
+  }
+  return next();
+});
+
+function createRoom(roomName) {
+  if (!rooms.has(roomName)) {
+    rooms.set(roomName, {
+      players: [],
+      symbols: {},
+      board: Array(9).fill(null),
+      turn: "X",
+      status: "waiting",
+      winner: null,
     });
   }
+  return rooms.get(roomName);
 }
 
-function checkWin(b){
-  const L=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-  for(const [a,b1,c] of L){
-    if(b[a] && b[a]===b1 && b[a]===b[c]) return b[a];
+function checkWin(board) {
+  const lines = [
+    [0, 1, 2],
+    [3, 4, 5],
+    [6, 7, 8],
+    [0, 3, 6],
+    [1, 4, 7],
+    [2, 5, 8],
+    [0, 4, 8],
+    [2, 4, 6],
+  ];
+
+  for (const [a, b, c] of lines) {
+    if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+      return board[a];
+    }
   }
-  if(b.every(v=>v!==null)) return 'draw';
+
+  if (board.every((cell) => cell !== null)) {
+    return "draw";
+  }
+
   return null;
 }
 
-io.on('connection',socket=>{
-  socket.on('joinRoom',({room})=>{
-    room=String(room||'main');
-    socket.join(room);
-    createRoom(room);
-    const r=rooms.get(room);
+function resetRoom(room) {
+  room.board = Array(9).fill(null);
+  room.turn = "X";
+  room.winner = null;
+  room.status = room.players.length === 2 ? "playing" : "waiting";
+}
 
-    if(!r.players.includes(socket.id)&&r.players.length<2)
-      r.players.push(socket.id);
+function serializeRoom(room) {
+  return {
+    board: room.board,
+    turn: room.turn,
+    status: room.status,
+    winner: room.winner,
+    playersCount: room.players.length,
+  };
+}
 
-    if(!r.symbols[socket.id]){
-      r.symbols[socket.id] = Object.values(r.symbols).includes('X')?'O':'X';
-    }
+function getRequestRoomName(req) {
+  return String(req.body.room || req.params.room || "main").trim() || "main";
+}
 
-    if(r.players.length===2){
-      r.status='playing';
-      r.turn='X';
-      r.board=Array(9).fill(null);
-      r.winner=null;
-    }
+app.get("/api/health", (_req, res) => {
+  res.json({ ok: true });
+});
 
-    io.to(room).emit('roomUpdate',r);
-  });
+app.post("/api/rooms/join", (req, res) => {
+  const roomName = getRequestRoomName(req);
+  const room = createRoom(roomName);
+  const providedPlayerId =
+    typeof req.body.playerId === "string" && req.body.playerId.trim()
+      ? req.body.playerId.trim()
+      : null;
+  const playerId = providedPlayerId || crypto.randomUUID();
 
-  socket.on('makeMove',({room,index})=>{
-    const r=rooms.get(room);
-    if(!r||r.status!=='playing')return;
-    const sym=r.symbols[socket.id];
-    if(!sym||sym!==r.turn)return;
-    if(r.board[index]!==null)return;
+  const alreadyInRoom = room.players.includes(playerId);
+  const roomIsFull = room.players.length >= 2;
 
-    r.board[index]=sym;
-    const res=checkWin(r.board);
-    if(res){r.status='finished';r.winner=res;} else {r.turn=r.turn==='X'?'O':'X';}
+  if (!alreadyInRoom && roomIsFull) {
+    return res.status(409).json({ error: "Room is full" });
+  }
 
-    io.to(room).emit('roomUpdate',r);
-  });
+  if (!alreadyInRoom) {
+    room.players.push(playerId);
+  }
 
-  socket.on('requestRematch',({room})=>{
-    const r=rooms.get(room);
-    if(!r)return;
-    r.board=Array(9).fill(null);
-    r.turn='X';
-    r.status=r.players.length===2?'playing':'waiting';
-    r.winner=null;
-    io.to(room).emit('roomUpdate',r);
-  });
+  if (!room.symbols[playerId]) {
+    room.symbols[playerId] = Object.values(room.symbols).includes("X") ? "O" : "X";
+  }
 
-  socket.on('leaveRoom',({room})=>{
-    const r=rooms.get(room);
-    if(!r)return;
-    r.players=r.players.filter(p=>p!==socket.id);
-    delete r.symbols[socket.id];
-    r.status='waiting';
-    r.board=Array(9).fill(null);
-    r.turn='X';
-    r.winner=null;
-    io.to(room).emit('roomUpdate',r);
+  if (room.players.length === 2 && room.status === "waiting") {
+    resetRoom(room);
+  }
+
+  return res.json({
+    room: roomName,
+    playerId,
+    symbol: room.symbols[playerId],
+    state: serializeRoom(room),
   });
 });
 
-// Serve static index.html
-app.use(express.static(__dirname + '/public'));
+app.get("/api/rooms/:room", (req, res) => {
+  const roomName = getRequestRoomName(req);
+  const room = rooms.get(roomName);
 
-server.listen(PORT,()=>console.log('http://localhost:'+PORT));
+  if (!room) {
+    return res.status(404).json({ error: "Room not found" });
+  }
+
+  const playerId =
+    typeof req.query.playerId === "string" && req.query.playerId.trim()
+      ? req.query.playerId.trim()
+      : "";
+
+  return res.json({
+    room: roomName,
+    symbol: playerId ? room.symbols[playerId] || null : null,
+    state: serializeRoom(room),
+  });
+});
+
+app.post("/api/rooms/:room/move", (req, res) => {
+  const roomName = getRequestRoomName(req);
+  const room = rooms.get(roomName);
+
+  if (!room) {
+    return res.status(404).json({ error: "Room not found" });
+  }
+
+  const { playerId, index } = req.body;
+  const parsedIndex = Number(index);
+
+  if (typeof playerId !== "string" || !room.symbols[playerId]) {
+    return res.status(400).json({ error: "Invalid playerId" });
+  }
+
+  if (!Number.isInteger(parsedIndex) || parsedIndex < 0 || parsedIndex > 8) {
+    return res.status(400).json({ error: "Invalid move index" });
+  }
+
+  if (room.status !== "playing") {
+    return res.status(409).json({ error: "Game is not in playing state" });
+  }
+
+  const symbol = room.symbols[playerId];
+  if (symbol !== room.turn) {
+    return res.status(409).json({ error: "Not your turn" });
+  }
+
+  if (room.board[parsedIndex] !== null) {
+    return res.status(409).json({ error: "Cell already occupied" });
+  }
+
+  room.board[parsedIndex] = symbol;
+  const winner = checkWin(room.board);
+  if (winner) {
+    room.status = "finished";
+    room.winner = winner;
+  } else {
+    room.turn = room.turn === "X" ? "O" : "X";
+  }
+
+  return res.json({
+    room: roomName,
+    symbol,
+    state: serializeRoom(room),
+  });
+});
+
+app.post("/api/rooms/:room/rematch", (req, res) => {
+  const roomName = getRequestRoomName(req);
+  const room = rooms.get(roomName);
+
+  if (!room) {
+    return res.status(404).json({ error: "Room not found" });
+  }
+
+  const { playerId } = req.body;
+  if (typeof playerId !== "string" || !room.symbols[playerId]) {
+    return res.status(400).json({ error: "Invalid playerId" });
+  }
+
+  resetRoom(room);
+
+  return res.json({
+    room: roomName,
+    symbol: room.symbols[playerId],
+    state: serializeRoom(room),
+  });
+});
+
+app.post("/api/rooms/:room/leave", (req, res) => {
+  const roomName = getRequestRoomName(req);
+  const room = rooms.get(roomName);
+
+  if (!room) {
+    return res.status(404).json({ error: "Room not found" });
+  }
+
+  const { playerId } = req.body;
+  if (typeof playerId !== "string" || !playerId.trim()) {
+    return res.status(400).json({ error: "Invalid playerId" });
+  }
+
+  room.players = room.players.filter((existingPlayerId) => existingPlayerId !== playerId);
+  delete room.symbols[playerId];
+  resetRoom(room);
+
+  if (room.players.length === 0) {
+    rooms.delete(roomName);
+    return res.json({ room: roomName, deleted: true });
+  }
+
+  return res.json({
+    room: roomName,
+    deleted: false,
+    state: serializeRoom(room),
+  });
+});
+
+app.listen(PORT, () => {
+  // eslint-disable-next-line no-console
+  console.log(`ttt_server api listening on http://localhost:${PORT}`);
+});

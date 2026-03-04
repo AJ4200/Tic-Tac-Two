@@ -4,14 +4,14 @@
   "description": "",
   "main": "ttt.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node ttt.js",
+    "dev": "node ttt.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "express": "^5.1.0",
-    "socket.io": "^4.8.1"
+    "express": "^5.1.0"
   }
 }
