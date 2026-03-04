@@ -38,6 +38,15 @@ type RoomPayload = {
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_TTT_API_BASE_URL || "http://localhost:4000";
 
+const getRandomBrightColor = () => {
+  const letters = "0123456789ABCDEF";
+  let color = "#";
+  for (let i = 0; i < 6; i += 1) {
+    color += letters[Math.floor(Math.random() * 16)];
+  }
+  return color;
+};
+
 export default function Home() {
   const [screen, setScreen] = useState<Screen>("home");
   const [playerName, setPlayerName] = useState("Player");
@@ -51,6 +60,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [isMusicMuted, setIsMusicMuted] = useState(false);
   const [enableAnimations, setEnableAnimations] = useState(true);
+  const [matchBackgroundColor, setMatchBackgroundColor] = useState("#ffffff");
 
   const callApi = async <T,>(path: string, init?: RequestInit): Promise<T> => {
     const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -112,6 +122,7 @@ export default function Home() {
       if (payload.you) {
         setPlayer(payload.you);
       }
+      setMatchBackgroundColor(getRandomBrightColor());
       setActiveRoomCode(payload.room.code);
       setScreen("game");
       setMessage("");
@@ -145,6 +156,7 @@ export default function Home() {
       if (payload.you) {
         setPlayer(payload.you);
       }
+      setMatchBackgroundColor(getRandomBrightColor());
       setActiveRoomCode(payload.room.code);
       setScreen("game");
       setMessage("");
@@ -525,12 +537,22 @@ export default function Home() {
     return renderHomeScreen();
   };
 
+  const isInMatch = screen === "game" && Boolean(activeRoomCode && player);
+
   return (
-    <main className={classnames("title-screen-root", !enableAnimations && "motion-off")}>
-      {renderTopBar()}
+    <main
+      className={classnames(
+        isInMatch ? "match-screen-root" : "title-screen-root",
+        !enableAnimations && "motion-off"
+      )}
+      style={isInMatch ? { backgroundColor: matchBackgroundColor } : undefined}
+    >
+      {!isInMatch ? renderTopBar() : null}
       {renderScreen()}
       <audio autoPlay={true} loop={true} muted={isMusicMuted} src="Loli.mp3" />
-      <span className="fixed bottom-1 text-sm">Project By AJ4200 c 2023</span>
+      {!isInMatch ? (
+        <span className="fixed bottom-1 text-sm">Project By AJ4200 c 2023</span>
+      ) : null}
     </main>
   );
 }

@@ -6,25 +6,14 @@ export const metadata: Metadata = {
   description: "Tic-Tac-Two multiplayer web client",
 };
 
-const getRandomBrightColor = () => {
-  const letters = "0123456789ABCDEF";
-  let color = "#";
-  for (let i = 0; i < 6; i += 1) {
-    color += letters[Math.floor(Math.random() * 16)];
-  }
-  return color;
-};
-
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const randomBrightBgColor = getRandomBrightColor();
-
   return (
     <html lang="en">
-      <body style={{ backgroundColor: randomBrightBgColor }}>{children}</body>
+      <body>{children}</body>
     </html>
   );
 }

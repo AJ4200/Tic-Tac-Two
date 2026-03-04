@@ -24,6 +24,13 @@ body {
   font-family: "Luckiest Guy", cursive;
 }
 
+:root {
+  --signature-shadow: 0 0.1em 20px black, 0.05em -0.03em 0 black,
+    0.05em 0.005em 0 black, 0em 0.08em 0 black, 0.05em 0.08em 0 black,
+    0px -0.03em 0 black, -0.03em -0.03em 0 black, -0.03em 0.08em 0 black,
+    -0.03em 0 0 black;
+}
+
 .title-screen-root {
   min-height: 100vh;
   width: 100%;
@@ -34,6 +41,22 @@ body {
   background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
   background-size: 400% 400%;
   animation: gradient 15s ease infinite;
+}
+
+.match-screen-root {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.title-screen-root,
+.title-screen-root * ,
+.match-screen-root,
+.match-screen-root * {
+  text-shadow: var(--signature-shadow);
 }
 
 .title-topbar {
@@ -109,6 +132,7 @@ h1 span:last-child {
   border: 2px solid black;
   color: black;
   padding: 0.6rem 1rem;
+  text-shadow: none;
 }
 
 .lobby-btn {
@@ -171,6 +195,7 @@ h1 span:last-child {
   padding: 0.4rem 0.9rem;
   background: rgba(255, 255, 255, 0.8);
   color: black;
+  text-shadow: none;
 }
 
 .leaderboard-list {
@@ -224,6 +249,19 @@ h1 span:last-child {
 .motion-off *::after {
   animation: none !important;
   transition: none !important;
+}
+
+.main-menu-btn,
+.lobby-btn,
+.public-rooms h2,
+.public-rooms p,
+.leaderboard-item p,
+.leaderboard-rank,
+.leaderboard-score,
+.status,
+.lobby-message,
+.settings-item p {
+  text-shadow: var(--signature-shadow);
 }
 /* Add these styles to your CSS or SCSS file */
 
