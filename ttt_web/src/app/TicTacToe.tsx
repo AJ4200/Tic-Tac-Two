@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useEffect, useMemo, useState } from "react";
 import X from "../components/game/X";
 import O from "../components/game/O";
