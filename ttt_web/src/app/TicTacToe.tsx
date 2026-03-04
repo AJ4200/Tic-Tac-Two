@@ -9,12 +9,45 @@ import { AiOutlineReload, AiOutlineSound } from "react-icons/ai";
 import { IconContext } from "react-icons";
 import { motion } from "framer-motion";
 
-type GameState = {
+type PlayerProfile = {
+  playerId: string;
+  name: string;
+  wins: number;
+  losses: number;
+  draws: number;
+};
+
+type RoomPlayer = {
+  playerId: string;
+  name: string;
+  symbol: "X" | "O";
+  wins: number;
+  losses: number;
+  draws: number;
+};
+
+type RoomState = {
+  code: string;
+  name: string;
+  isPublic: boolean;
   board: Array<"X" | "O" | null>;
   turn: "X" | "O";
   status: "waiting" | "playing" | "finished";
   winner: "X" | "O" | "draw" | null;
   playersCount: number;
+  players: RoomPlayer[];
+};
+
+type RoomPayload = {
+  room: RoomState;
+  yourSymbol: "X" | "O" | null;
+  you: PlayerProfile | null;
+};
+
+type TicTacToeProps = {
+  roomCode: string;
+  player: PlayerProfile;
+  onLeave: (player: PlayerProfile) => void;
 };
 
 const API_BASE_URL =
@@ -26,68 +59,51 @@ const buttonVariants = {
   pressed: { scale: 0.9, boxShadow: "0px 0px 5px rgba(0, 0, 0, 0.2)" },
 };
 
-const EMPTY_STATE: GameState = {
-  board: Array(9).fill(null),
-  turn: "X",
-  status: "waiting",
-  winner: null,
-  playersCount: 0,
-};
-
-const TicTacToe: React.FC = () => {
-  const [roomInput, setRoomInput] = useState("main");
-  const [room, setRoom] = useState<string | null>(null);
-  const [playerId, setPlayerId] = useState<string | null>(null);
-  const [symbol, setSymbol] = useState<"X" | "O" | null>(null);
-  const [state, setState] = useState<GameState>(EMPTY_STATE);
+const TicTacToe: React.FC<TicTacToeProps> = ({ roomCode, player, onLeave }) => {
+  const [room, setRoom] = useState<RoomState | null>(null);
+  const [yourSymbol, setYourSymbol] = useState<"X" | "O" | null>(null);
   const [isMuted, setIsMuted] = useState(false);
   const [message, setMessage] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
 
-  const toggleMute = () => {
-    setIsMuted(!isMuted);
-  };
-
-  const canPlayTurn =
-    state.status === "playing" && symbol !== null && state.turn === symbol;
+  const xPlayer = room?.players.find((entry) => entry.symbol === "X") || null;
+  const oPlayer = room?.players.find((entry) => entry.symbol === "O") || null;
 
   const status = useMemo(() => {
     if (!room) {
-      return "Join a room to start";
+      return "Loading room...";
     }
 
-    if (state.status === "waiting") {
-      return `Room: ${room} | You are ${symbol ?? "?"} | Waiting for opponent`;
+    if (room.status === "waiting") {
+      return `Room ${room.code} | Waiting for opponent`;
     }
 
-    if (state.status === "playing") {
-      if (!symbol) {
-        return `Room: ${room} | Spectating`;
+    if (room.status === "playing") {
+      if (yourSymbol && room.turn === yourSymbol) {
+        return `Room ${room.code} | Your turn (${yourSymbol})`;
       }
-      return state.turn === symbol
-        ? `Room: ${room} | Your turn (${symbol})`
-        : `Room: ${room} | Opponent's turn (${state.turn})`;
+      return `Room ${room.code} | ${room.turn} to move`;
     }
 
-    if (state.winner === "draw") {
-      return `Room: ${room} | Draw`;
+    if (room.winner === "draw") {
+      return `Room ${room.code} | Draw`;
     }
 
-    if (state.winner && symbol) {
-      return state.winner === symbol
-        ? `Room: ${room} | You win`
-        : `Room: ${room} | You lose`;
+    if (room.winner && yourSymbol) {
+      return room.winner === yourSymbol
+        ? `Room ${room.code} | You win`
+        : `Room ${room.code} | You lose`;
     }
 
-    return `Room: ${room} | Match finished`;
-  }, [room, state, symbol]);
+    return `Room ${room.code} | Match finished`;
+  }, [room, yourSymbol]);
 
-  useEffect(() => {
-    const savedPlayerId = window.localStorage.getItem("ttt_player_id");
-    if (savedPlayerId) {
-      setPlayerId(savedPlayerId);
-    }
-  }, []);
+  const canPlayTurn = Boolean(
+    room && yourSymbol && room.status === "playing" && room.turn === yourSymbol
+  );
+
+  const toggleMute = () => {
+    setIsMuted((previous) => !previous);
+  };
 
   const callApi = async <T,>(path: string, init?: RequestInit): Promise<T> => {
     const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -97,121 +113,105 @@ const TicTacToe: React.FC = () => {
 
     const payload = await response.json();
     if (!response.ok) {
-      const apiError = payload?.error || "Request failed";
-      throw new Error(apiError);
+      throw new Error(payload?.error || "Request failed");
     }
+
     return payload as T;
   };
 
-  const syncRoomState = async (roomName: string, currentPlayerId: string) => {
-    const payload = await callApi<{ symbol: "X" | "O" | null; state: GameState }>(
-      `/api/rooms/${encodeURIComponent(roomName)}?playerId=${encodeURIComponent(currentPlayerId)}`
+  const syncRoom = async () => {
+    const payload = await callApi<RoomPayload>(
+      `/api/rooms/${encodeURIComponent(roomCode)}?playerId=${encodeURIComponent(player.playerId)}`
     );
-    setSymbol(payload.symbol);
-    setState(payload.state);
+    setRoom(payload.room);
+    setYourSymbol(payload.yourSymbol);
   };
 
-  const joinRoom = async () => {
-    const roomName = roomInput.trim() || "main";
-
-    try {
-      setIsLoading(true);
-      const payload = await callApi<{
-        room: string;
-        playerId: string;
-        symbol: "X" | "O" | null;
-        state: GameState;
-      }>("/api/rooms/join", {
-        method: "POST",
-        body: JSON.stringify({
-          room: roomName,
-          playerId,
-        }),
-      });
-
-      setRoom(payload.room);
-      setPlayerId(payload.playerId);
-      setSymbol(payload.symbol);
-      setState(payload.state);
-      setMessage("");
-      window.localStorage.setItem("ttt_player_id", payload.playerId);
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Could not join room");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const leaveRoom = async () => {
-    if (!room || !playerId) {
+  const handleMove = async (index: number) => {
+    if (!room || !canPlayTurn || room.board[index] !== null) {
       return;
     }
-    try {
-      await callApi(`/api/rooms/${encodeURIComponent(room)}/leave`, {
-        method: "POST",
-        body: JSON.stringify({ playerId }),
-      });
-    } catch (_error) {
-      // Ignore room cleanup errors on leave.
-    }
-    setRoom(null);
-    setSymbol(null);
-    setState(EMPTY_STATE);
-  };
 
-  const handleClick = async (index: number): Promise<void> => {
-    if (!room || !playerId || !canPlayTurn || state.board[index] !== null) {
-      return;
-    }
     try {
-      const payload = await callApi<{ state: GameState }>(
-        `/api/rooms/${encodeURIComponent(room)}/move`,
+      const payload = await callApi<RoomPayload>(
+        `/api/rooms/${encodeURIComponent(room.code)}/move`,
         {
           method: "POST",
-          body: JSON.stringify({ playerId, index }),
+          body: JSON.stringify({
+            playerId: player.playerId,
+            index,
+          }),
         }
       );
-      setState(payload.state);
+      setRoom(payload.room);
+      setYourSymbol(payload.yourSymbol);
       setMessage("");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not make move");
     }
   };
 
-  const handleReset = async (): Promise<void> => {
-    if (!room || !playerId) {
+  const handleRematch = async () => {
+    if (!room) {
       return;
     }
+
     try {
-      const payload = await callApi<{ state: GameState }>(
-        `/api/rooms/${encodeURIComponent(room)}/rematch`,
+      const payload = await callApi<RoomPayload>(
+        `/api/rooms/${encodeURIComponent(room.code)}/rematch`,
         {
           method: "POST",
-          body: JSON.stringify({ playerId }),
+          body: JSON.stringify({ playerId: player.playerId }),
         }
       );
-      setState(payload.state);
+      setRoom(payload.room);
+      setYourSymbol(payload.yourSymbol);
       setMessage("");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not rematch");
     }
   };
 
-  useEffect(() => {
-    if (!room || !playerId) {
-      return undefined;
+  const handleLeave = async () => {
+    if (!room) {
+      onLeave(player);
+      return;
     }
+
+    try {
+      const payload = await callApi<RoomPayload>(
+        `/api/rooms/${encodeURIComponent(room.code)}/leave`,
+        {
+          method: "POST",
+          body: JSON.stringify({ playerId: player.playerId }),
+        }
+      );
+
+      onLeave(payload.you || player);
+    } catch (_error) {
+      onLeave(player);
+    }
+  };
+
+  useEffect(() => {
+    syncRoom().catch(() => {
+      setMessage("Could not load room");
+    });
+
     const intervalId = window.setInterval(() => {
-      syncRoomState(room, playerId).catch(() => {
-        // Polling should stay silent; direct actions show errors.
+      syncRoom().catch(() => {
+        // Keep polling silent unless user triggers an action.
       });
     }, 1200);
-    return () => window.clearInterval(intervalId);
-  }, [room, playerId]);
 
-  const renderSquare = (index: number): JSX.Element => (
-    <div className="square" onClick={() => void handleClick(index)}>
-      {state.board[index] === "X" ? <X /> : state.board[index] === "O" ? <O /> : null}
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [roomCode, player.playerId]);
+
+  const renderSquare = (index: number): React.JSX.Element => (
+    <div className="square" onClick={() => void handleMove(index)}>
+      {room?.board[index] === "X" ? <X /> : room?.board[index] === "O" ? <O /> : null}
     </div>
   );
 
@@ -219,28 +219,15 @@ const TicTacToe: React.FC = () => {
     <>
       <div>
         <div className="fixed top-10 left-10 flex gap-2 items-center">
-          <input
-            className="text-black px-3 py-2 rounded"
-            value={roomInput}
-            onChange={(event) => setRoomInput(event.target.value)}
-            placeholder="room name"
-          />
-          <button
-            className="reset"
-            onClick={() => void joinRoom()}
-            disabled={isLoading}
-            type="button"
-          >
-            {isLoading ? "Joining..." : "Join"}
+          <div className="status">{room ? `${room.name} (${room.code})` : "Loading"}</div>
+          <button className="mute" onClick={() => void handleLeave()} type="button">
+            Leave
           </button>
-          {room ? (
-            <button className="mute" onClick={() => void leaveRoom()} type="button">
-              Leave
-            </button>
-          ) : null}
         </div>
+
         <div className="status">{status}</div>
         {message ? <div className="status text-red-500">{message}</div> : null}
+
         <div className="board">
           <div className="board-row">
             {renderSquare(0)}
@@ -258,10 +245,11 @@ const TicTacToe: React.FC = () => {
             {renderSquare(8)}
           </div>
         </div>
+
         <div className="fixed flex reset-container">
           <motion.button
             className="reset"
-            onClick={() => void handleReset()}
+            onClick={() => void handleRematch()}
             variants={buttonVariants}
             initial="initial"
             whileHover="hover"
@@ -275,6 +263,7 @@ const TicTacToe: React.FC = () => {
             </IconContext.Provider>
             rematch
           </motion.button>
+
           <motion.button
             className="mute"
             onClick={toggleMute}
@@ -295,25 +284,27 @@ const TicTacToe: React.FC = () => {
           </motion.button>
         </div>
       </div>
+
       <PlayerX
-        alias="PlayerX"
-        picture={`https://robohash.org/X`}
-        wins={state.winner === "X" ? 1 : 0}
-        losses={state.winner === "O" ? 1 : 0}
-        draws={state.winner === "draw" ? 1 : 0}
-        mood={symbol === "X" ? "You" : "Ready"}
+        alias={xPlayer?.name || "Waiting..."}
+        picture={`https://robohash.org/${xPlayer?.name || "X"}`}
+        wins={xPlayer?.wins || 0}
+        losses={xPlayer?.losses || 0}
+        draws={xPlayer?.draws || 0}
+        mood={room?.winner === "X" ? "Winner" : yourSymbol === "X" ? "You" : "Ready"}
       />
       <PlayerO
-        alias="PlayerO"
-        picture={`https://robohash.org/O`}
-        wins={state.winner === "O" ? 1 : 0}
-        losses={state.winner === "X" ? 1 : 0}
-        draws={state.winner === "draw" ? 1 : 0}
-        mood={symbol === "O" ? "You" : "Ready"}
+        alias={oPlayer?.name || "Waiting..."}
+        picture={`https://robohash.org/${oPlayer?.name || "O"}`}
+        wins={oPlayer?.wins || 0}
+        losses={oPlayer?.losses || 0}
+        draws={oPlayer?.draws || 0}
+        mood={room?.winner === "O" ? "Winner" : yourSymbol === "O" ? "You" : "Ready"}
       />
       <audio autoPlay={true} muted={isMuted} src="Loli.mp3" />
     </>
   );
 };
 
+export type { PlayerProfile };
 export default TicTacToe;
