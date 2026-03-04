@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tic‑Tac‑Two</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <script defer src="client.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex flex-col items-center p-6">
+  <h1 class="text-4xl font-bold mb-6">Tic‑Tac‑Two</h1>
+
+  <div class="flex gap-3 mb-6">
+    <input id="roomInput" placeholder="room name" class="px-3 py-2 text-black rounded" />
+    <button id="joinBtn" class="px-4 py-2 bg-blue-600 rounded">Join / Create</button>
+  </div>
+
+  <p id="status" class="text-xl mb-4"></p>
+  <p id="turn" class="text-lg mb-4"></p>
+
+  <div id="board" class="grid grid-cols-3 gap-2 w-64"></div>
+
+  <button id="rematch" class="hidden mt-6 px-4 py-2 bg-green-600 rounded">Rematch</button>
+</body>
+</html>
