@@ -1,17 +1,15 @@
 # Tic-Tac-Two
 
-Tic-Tac-Two is an online multiplayer tic-tac-toe game built using Next.js, Typescript, Tailwind CSS, Three.js, Framer Motion, MongoDB, Express.js, and WebSockets. It offers a fun and engaging gaming experience with the following main features:
+Tic-Tac-Two is an online multiplayer tic-tac-toe game built using Next.js, Typescript, Tailwind CSS, Framer Motion, SQLite, Express.js, and WebSockets. It offers a fun and engaging gaming experience with the following main features:
 
 - Players can create a player account using their Google account and are assigned AI-generated avatars and alias names.
 - Game creators can initiate matches and send game links to other players.
-- Google accounts are used to track player wins and the number of matches played.
 - During a match, players can view their opponent's mood and win/draw/loss ratio, which determines their mood display.
 
 ## Tech Stack
 
-- Frontend: Next.js, Typescript, Tailwind CSS, Three.js, Framer Motion
-- Backend: Express.js, MongoDB, WebSockets
-- State Management: Redux
+- Frontend: Next.js, Typescript, Tailwind CSS, Framer Motion
+- Backend: Express.js, SQLite, WebSockets
 
 ## Getting Started
 

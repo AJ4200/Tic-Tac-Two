@@ -74,7 +74,9 @@ function serializeRoom(room) {
 }
 
 function getRequestRoomName(req) {
-  return String(req.body.room || req.params.room || "main").trim() || "main";
+  return (
+    String(req.body?.room || req.params?.room || "main").trim() || "main"
+  );
 }
 
 app.get("/api/health", (_req, res) => {
