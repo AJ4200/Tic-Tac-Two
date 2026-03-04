@@ -1,5 +1,5 @@
 const crypto = require("crypto");
-const { run, get } = require("../db/client");
+const { run, get, all } = require("../db/client");
 
 function fallbackName(playerId) {
   return `Player-${playerId.slice(0, 4).toUpperCase()}`;
@@ -39,8 +39,23 @@ async function incrementPlayerStats(playerId, { wins = 0, losses = 0, draws = 0 
   );
 }
 
+async function listPlayersByScore() {
+  return all(
+    `SELECT
+      id,
+      name,
+      wins,
+      losses,
+      draws,
+      (wins * 3 + draws) AS score
+    FROM players
+    ORDER BY score DESC, wins DESC, draws DESC, losses ASC, name ASC`
+  );
+}
+
 module.exports = {
   upsertPlayer,
   getPlayerById,
   incrementPlayerStats,
+  listPlayersByScore,
 };

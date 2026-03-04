@@ -47,7 +47,10 @@ type RoomPayload = {
 type TicTacToeProps = {
   roomCode: string;
   player: PlayerProfile;
-  onLeave: (player: PlayerProfile) => void;
+  isMusicMuted: boolean;
+  onToggleMusic: () => void;
+  onProfileUpdate: (player: PlayerProfile) => void;
+  onLeave: () => void;
 };
 
 const API_BASE_URL =
@@ -59,10 +62,16 @@ const buttonVariants = {
   pressed: { scale: 0.9, boxShadow: "0px 0px 5px rgba(0, 0, 0, 0.2)" },
 };
 
-const TicTacToe: React.FC<TicTacToeProps> = ({ roomCode, player, onLeave }) => {
+const TicTacToe: React.FC<TicTacToeProps> = ({
+  roomCode,
+  player,
+  isMusicMuted,
+  onToggleMusic,
+  onProfileUpdate,
+  onLeave,
+}) => {
   const [room, setRoom] = useState<RoomState | null>(null);
   const [yourSymbol, setYourSymbol] = useState<"X" | "O" | null>(null);
-  const [isMuted, setIsMuted] = useState(false);
   const [message, setMessage] = useState("");
 
   const xPlayer = room?.players.find((entry) => entry.symbol === "X") || null;
@@ -101,10 +110,6 @@ const TicTacToe: React.FC<TicTacToeProps> = ({ roomCode, player, onLeave }) => {
     room && yourSymbol && room.status === "playing" && room.turn === yourSymbol
   );
 
-  const toggleMute = () => {
-    setIsMuted((previous) => !previous);
-  };
-
   const callApi = async <T,>(path: string, init?: RequestInit): Promise<T> => {
     const response = await fetch(`${API_BASE_URL}${path}`, {
       headers: { "Content-Type": "application/json" },
@@ -119,12 +124,19 @@ const TicTacToe: React.FC<TicTacToeProps> = ({ roomCode, player, onLeave }) => {
     return payload as T;
   };
 
+  const applyPayload = (payload: RoomPayload) => {
+    setRoom(payload.room);
+    setYourSymbol(payload.yourSymbol);
+    if (payload.you) {
+      onProfileUpdate(payload.you);
+    }
+  };
+
   const syncRoom = async () => {
     const payload = await callApi<RoomPayload>(
       `/api/rooms/${encodeURIComponent(roomCode)}?playerId=${encodeURIComponent(player.playerId)}`
     );
-    setRoom(payload.room);
-    setYourSymbol(payload.yourSymbol);
+    applyPayload(payload);
   };
 
   const handleMove = async (index: number) => {
@@ -143,8 +155,7 @@ const TicTacToe: React.FC<TicTacToeProps> = ({ roomCode, player, onLeave }) => {
           }),
         }
       );
-      setRoom(payload.room);
-      setYourSymbol(payload.yourSymbol);
+      applyPayload(payload);
       setMessage("");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not make move");
@@ -164,8 +175,7 @@ const TicTacToe: React.FC<TicTacToeProps> = ({ roomCode, player, onLeave }) => {
           body: JSON.stringify({ playerId: player.playerId }),
         }
       );
-      setRoom(payload.room);
-      setYourSymbol(payload.yourSymbol);
+      applyPayload(payload);
       setMessage("");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not rematch");
@@ -174,7 +184,7 @@ const TicTacToe: React.FC<TicTacToeProps> = ({ roomCode, player, onLeave }) => {
 
   const handleLeave = async () => {
     if (!room) {
-      onLeave(player);
+      onLeave();
       return;
     }
 
@@ -186,11 +196,14 @@ const TicTacToe: React.FC<TicTacToeProps> = ({ roomCode, player, onLeave }) => {
           body: JSON.stringify({ playerId: player.playerId }),
         }
       );
-
-      onLeave(payload.you || player);
+      if (payload.you) {
+        onProfileUpdate(payload.you);
+      }
     } catch (_error) {
-      onLeave(player);
+      // Fall back to client-side leave.
     }
+
+    onLeave();
   };
 
   useEffect(() => {
@@ -266,7 +279,7 @@ const TicTacToe: React.FC<TicTacToeProps> = ({ roomCode, player, onLeave }) => {
 
           <motion.button
             className="mute"
-            onClick={toggleMute}
+            onClick={onToggleMusic}
             variants={buttonVariants}
             initial="initial"
             whileHover="hover"
@@ -277,7 +290,7 @@ const TicTacToe: React.FC<TicTacToeProps> = ({ roomCode, player, onLeave }) => {
               value={{ size: "1.5em", style: { marginRight: "5px" } }}
             >
               <div className="flex ">
-                <AiOutlineSound /> {isMuted ? <p>off</p> : ""}
+                <AiOutlineSound /> {isMusicMuted ? <p>off</p> : ""}
               </div>
             </IconContext.Provider>
             mute
@@ -301,7 +314,6 @@ const TicTacToe: React.FC<TicTacToeProps> = ({ roomCode, player, onLeave }) => {
         draws={oPlayer?.draws || 0}
         mood={room?.winner === "O" ? "Winner" : yourSymbol === "O" ? "You" : "Ready"}
       />
-      <audio autoPlay={true} muted={isMuted} src="Loli.mp3" />
     </>
   );
 };

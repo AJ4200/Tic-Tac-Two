@@ -140,6 +140,91 @@ h1 span:last-child {
   color: #fff8d9;
   text-shadow: 0 0 8px black;
 }
+
+.main-menu {
+  margin-top: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: min(90vw, 460px);
+}
+
+.main-menu-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  border: none;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  font-size: 1.7rem;
+  padding: 1rem 1.4rem;
+}
+
+.lobby-back {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 2px solid black;
+  border-radius: 999px;
+  padding: 0.4rem 0.9rem;
+  background: rgba(255, 255, 255, 0.8);
+  color: black;
+}
+
+.leaderboard-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.leaderboard-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border: 2px solid rgba(0, 0, 0, 0.6);
+  border-radius: 10px;
+  padding: 0.4rem 0.6rem;
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.leaderboard-rank {
+  min-width: 3rem;
+}
+
+.leaderboard-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  border: 2px solid black;
+}
+
+.leaderboard-meta {
+  flex: 1;
+}
+
+.leaderboard-score {
+  white-space: nowrap;
+}
+
+.settings-item {
+  margin-bottom: 0.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 2px solid rgba(0, 0, 0, 0.5);
+  border-radius: 12px;
+  padding: 0.6rem 0.8rem;
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.motion-off *,
+.motion-off *::before,
+.motion-off *::after {
+  animation: none !important;
+  transition: none !important;
+}
 /* Add these styles to your CSS or SCSS file */
 
 .square {
@@ -331,6 +416,10 @@ transform: skewX(-5deg);
 
   .lobby-row {
     flex-direction: column;
+  }
+
+  .main-menu-btn {
+    font-size: 1.2rem;
   }
 
   .public-room-item {

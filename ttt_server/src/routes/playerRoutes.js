@@ -1,6 +1,6 @@
 const express = require("express");
 const asyncHandler = require("../utils/asyncHandler");
-const { registerPlayer } = require("../services/gameService");
+const { registerPlayer, getLeaderboard } = require("../services/gameService");
 
 const router = express.Router();
 
@@ -12,6 +12,14 @@ router.post(
       name: req.body.name,
     });
     res.json(player);
+  })
+);
+
+router.get(
+  "/leaderboard",
+  asyncHandler(async (_req, res) => {
+    const players = await getLeaderboard();
+    res.json({ players });
   })
 );
 

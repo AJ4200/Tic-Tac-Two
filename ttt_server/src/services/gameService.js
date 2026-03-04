@@ -3,6 +3,7 @@ const {
   upsertPlayer,
   getPlayerById,
   incrementPlayerStats,
+  listPlayersByScore,
 } = require("../repositories/playerRepository");
 const {
   createRoom,
@@ -19,6 +20,20 @@ const {
 } = require("../repositories/roomRepository");
 const { createRoomCode } = require("../utils/roomCode");
 const { checkWinner } = require("../utils/game");
+
+function serializePlayer(player) {
+  if (!player) {
+    return null;
+  }
+
+  return {
+    playerId: player.id,
+    name: player.name,
+    wins: Number(player.wins),
+    losses: Number(player.losses),
+    draws: Number(player.draws),
+  };
+}
 
 async function ensureRoom(code) {
   const room = await getRoomByCode(code);
@@ -75,19 +90,13 @@ async function buildRoomResponse(room, playerId) {
       })),
     },
     yourSymbol: youMembership ? youMembership.symbol : null,
-    you,
+    you: serializePlayer(you),
   };
 }
 
 async function registerPlayer({ playerId, name }) {
   const player = await upsertPlayer({ playerId, name });
-  return {
-    playerId: player.id,
-    name: player.name,
-    wins: player.wins,
-    losses: player.losses,
-    draws: player.draws,
-  };
+  return serializePlayer(player);
 }
 
 async function createNewRoom({ playerId, roomName, isPublic }) {
@@ -254,8 +263,17 @@ async function leaveRoom({ code, playerId }) {
   return buildRoomResponse(refreshedRoom, null);
 }
 
+async function getLeaderboard() {
+  const players = await listPlayersByScore();
+  return players.map((player) => ({
+    ...serializePlayer(player),
+    score: Number(player.score),
+  }));
+}
+
 module.exports = {
   registerPlayer,
+  getLeaderboard,
   createNewRoom,
   joinExistingRoom,
   getRoomState,
