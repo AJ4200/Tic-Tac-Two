@@ -4,56 +4,29 @@ import React, { useEffect, useState } from "react";
 import classnames from "classnames";
 import { motion } from "framer-motion";
 import { IconContext } from "react-icons";
-import {
-  AiFillGithub,
-  AiFillLinkedin,
-  AiFillPlayCircle,
-  AiFillSetting,
-  AiOutlineTrophy,
-  AiOutlineArrowLeft,
-  AiOutlineLoading3Quarters,
-  AiOutlineClockCircle,
-  AiOutlinePlayCircle,
-  AiOutlineCheckCircle,
-  AiOutlineTeam,
-} from "react-icons/ai";
-import TicTacToe, { PlayerProfile } from "./TicTacToe";
-
-type Screen = "home" | "lobby" | "leaderboard" | "settings" | "game";
-
-type PublicRoom = {
-  code: string;
-  name: string;
-  status: "waiting" | "playing" | "finished";
-  playersCount: number;
-  isPublic: boolean;
-};
-
-type LeaderboardPlayer = PlayerProfile & {
-  score: number;
-};
-
-type RoomPayload = {
-  room: {
-    code: string;
-  };
-  you: PlayerProfile | null;
-};
-
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_TTT_API_BASE_URL || "http://localhost:4000";
-
-const getRandomBrightColor = () => {
-  const letters = "0123456789ABCDEF";
-  let color = "#";
-  for (let i = 0; i < 6; i += 1) {
-    color += letters[Math.floor(Math.random() * 16)];
-  }
-  return color;
-};
+import { AiFillGithub, AiFillLinkedin } from "react-icons/ai";
+import TicTacToe from "./TicTacToe";
+import { AppLoader } from "@/features/home/AppLoader";
+import { LeaderboardScreen } from "@/features/home/LeaderboardScreen";
+import { LobbyScreen } from "@/features/home/LobbyScreen";
+import { MainMenu } from "@/features/home/MainMenu";
+import { SettingsScreen } from "@/features/home/SettingsScreen";
+import { useApiClient } from "@/hooks/useApiClient";
+import { STORAGE_KEYS } from "@/lib/constants";
+import { getRandomBrightColor } from "@/lib/random";
+import type {
+  CpuDifficulty,
+  GameMode,
+  LeaderboardPlayer,
+  PlayerProfile,
+  PublicRoom,
+  RoomPayload,
+  Screen,
+} from "@/types/game";
 
 export default function Home() {
   const [screen, setScreen] = useState<Screen>("home");
+  const [gameMode, setGameMode] = useState<GameMode>("online");
   const [playerName, setPlayerName] = useState("Player");
   const [player, setPlayer] = useState<PlayerProfile | null>(null);
   const [roomName, setRoomName] = useState("My Room");
@@ -65,44 +38,10 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [isMusicMuted, setIsMusicMuted] = useState(false);
   const [enableAnimations, setEnableAnimations] = useState(true);
+  const [cpuDifficulty, setCpuDifficulty] = useState<CpuDifficulty>("medium");
   const [matchBackgroundColor, setMatchBackgroundColor] = useState("#ffffff");
-  const [activeRequests, setActiveRequests] = useState(0);
 
-  const runWithLoader = async <T,>(
-    task: () => Promise<T>,
-    showLoader = true
-  ): Promise<T> => {
-    if (showLoader) {
-      setActiveRequests((current) => current + 1);
-    }
-    try {
-      return await task();
-    } finally {
-      if (showLoader) {
-        setActiveRequests((current) => Math.max(0, current - 1));
-      }
-    }
-  };
-
-  const callApi = async <T,>(
-    path: string,
-    init?: RequestInit,
-    showLoader = true
-  ): Promise<T> => {
-    return runWithLoader(async () => {
-      const response = await fetch(`${API_BASE_URL}${path}`, {
-        headers: { "Content-Type": "application/json" },
-        ...init,
-      });
-
-      const payload = await response.json();
-      if (!response.ok) {
-        throw new Error(payload?.error || "Request failed");
-      }
-
-      return payload as T;
-    }, showLoader);
-  };
+  const { activeRequests, runWithLoader, callApi } = useApiClient();
 
   const refreshPublicRooms = async () => {
     const payload = await callApi<{ rooms: PublicRoom[] }>("/api/rooms/public");
@@ -117,7 +56,7 @@ export default function Home() {
   };
 
   const ensurePlayer = async () => {
-    const savedPlayerId = window.localStorage.getItem("ttt_player_id");
+    const savedPlayerId = window.localStorage.getItem(STORAGE_KEYS.playerId);
     const payload = await callApi<PlayerProfile>("/api/players/register", {
       method: "POST",
       body: JSON.stringify({
@@ -128,9 +67,16 @@ export default function Home() {
 
     setPlayer(payload);
     setPlayerName(payload.name);
-    window.localStorage.setItem("ttt_player_id", payload.playerId);
-    window.localStorage.setItem("ttt_player_name", payload.name);
+    window.localStorage.setItem(STORAGE_KEYS.playerId, payload.playerId);
+    window.localStorage.setItem(STORAGE_KEYS.playerName, payload.name);
     return payload;
+  };
+
+  const beginMatch = (mode: GameMode, roomCode: string | null) => {
+    setGameMode(mode);
+    setActiveRoomCode(roomCode);
+    setMatchBackgroundColor(getRandomBrightColor());
+    setScreen("game");
   };
 
   const createRoom = async (isPublic: boolean) => {
@@ -150,9 +96,8 @@ export default function Home() {
       if (payload.you) {
         setPlayer(payload.you);
       }
-      setMatchBackgroundColor(getRandomBrightColor());
-      setActiveRoomCode(payload.room.code);
-      setScreen("game");
+
+      beginMatch("online", payload.room.code);
       setMessage("");
       await Promise.all([refreshPublicRooms(), refreshLeaderboard()]);
     } catch (error) {
@@ -184,9 +129,8 @@ export default function Home() {
       if (payload.you) {
         setPlayer(payload.you);
       }
-      setMatchBackgroundColor(getRandomBrightColor());
-      setActiveRoomCode(payload.room.code);
-      setScreen("game");
+
+      beginMatch("online", payload.room.code);
       setMessage("");
       await Promise.all([refreshPublicRooms(), refreshLeaderboard()]);
     } catch (error) {
@@ -196,10 +140,24 @@ export default function Home() {
     }
   };
 
+  const startCpuMatch = async () => {
+    try {
+      setIsLoading(true);
+      await ensurePlayer();
+      beginMatch("cpu", null);
+      setMessage("");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Could not start CPU match");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const savedName = window.localStorage.getItem("ttt_player_name");
-    const savedMuted = window.localStorage.getItem("ttt_music_muted");
-    const savedAnimations = window.localStorage.getItem("ttt_enable_animations");
+    const savedName = window.localStorage.getItem(STORAGE_KEYS.playerName);
+    const savedMuted = window.localStorage.getItem(STORAGE_KEYS.musicMuted);
+    const savedAnimations = window.localStorage.getItem(STORAGE_KEYS.enableAnimations);
+    const savedDifficulty = window.localStorage.getItem(STORAGE_KEYS.cpuDifficulty);
 
     if (savedName) {
       setPlayerName(savedName);
@@ -209,6 +167,9 @@ export default function Home() {
     }
     if (savedAnimations) {
       setEnableAnimations(savedAnimations === "true");
+    }
+    if (savedDifficulty === "easy" || savedDifficulty === "medium" || savedDifficulty === "hard") {
+      setCpuDifficulty(savedDifficulty);
     }
 
     ensurePlayer().catch(() => {
@@ -221,6 +182,8 @@ export default function Home() {
       // Ignore initial leaderboard load failures.
     });
   }, []);
+
+  const isInMatch = screen === "game" && Boolean(player);
 
   const renderTopBar = () => (
     <header className="title-topbar">
@@ -251,315 +214,119 @@ export default function Home() {
     </header>
   );
 
-  const renderHomeScreen = () => (
-    <section className="title-screen-content">
-      <h1>
-        <span>Tic-</span>
-        <span>Tac</span>
-        <span>-Two</span>
-      </h1>
-
-      <motion.div
-        className="main-menu"
-        animate={enableAnimations ? { y: [6, -6, 6] } : undefined}
-        transition={enableAnimations ? { duration: 4, repeat: Infinity } : undefined}
-      >
-        <button
-          className={classnames("main-menu-btn", "custome-shadow")}
-          type="button"
-          onClick={() => setScreen("lobby")}
-        >
-          <AiFillPlayCircle /> Play
-        </button>
-        <button
-          className={classnames("main-menu-btn", "custome-shadow")}
-          type="button"
-          onClick={() => {
+  const renderScreen = () => {
+    if (screen === "home") {
+      return (
+        <MainMenu
+          enableAnimations={enableAnimations}
+          onPlay={() => setScreen("lobby")}
+          onLeaderboard={() => {
             refreshLeaderboard().catch(() => {
               setMessage("Could not load leaderboard");
             });
             setScreen("leaderboard");
           }}
-        >
-          <AiOutlineTrophy /> Leaderboard
-        </button>
-        <button
-          className={classnames("main-menu-btn", "custome-shadow")}
-          type="button"
-          onClick={() => setScreen("settings")}
-        >
-          <AiFillSetting /> Settings
-        </button>
-      </motion.div>
-    </section>
-  );
-
-  const renderLobbyScreen = () => (
-    <section className="title-screen-content">
-      <h1>
-        <span>Tic-</span>
-        <span>Tac</span>
-        <span>-Two</span>
-      </h1>
-
-      <div className="lobby-card mt-8">
-        <div className="lobby-row">
-          <button className="lobby-back" type="button" onClick={() => setScreen("home")}>
-            <AiOutlineArrowLeft /> Back
-          </button>
-        </div>
-
-        <div className="lobby-row">
-          <input
-            className="lobby-input"
-            value={playerName}
-            onChange={(event) => setPlayerName(event.target.value)}
-            placeholder="your name"
-          />
-          <button
-            className={classnames("lobby-btn", "custome-shadow")}
-            type="button"
-            onClick={() => {
-              ensurePlayer()
-                .then((registeredPlayer) => {
-                  setPlayer(registeredPlayer);
-                  setMessage("Profile saved");
-                })
-                .catch((error) => {
-                  setMessage(error instanceof Error ? error.message : "Could not save profile");
-                });
-            }}
-          >
-            Save Name
-          </button>
-        </div>
-
-        <div className="lobby-row">
-          <input
-            className="lobby-input"
-            value={roomName}
-            onChange={(event) => setRoomName(event.target.value)}
-            placeholder="room name"
-          />
-          <button
-            className={classnames("lobby-btn", "custome-shadow")}
-            type="button"
-            disabled={isLoading}
-            onClick={() => void createRoom(true)}
-          >
-            Create Public
-          </button>
-          <button
-            className={classnames("lobby-btn", "custome-shadow")}
-            type="button"
-            disabled={isLoading}
-            onClick={() => void createRoom(false)}
-          >
-            Create Private
-          </button>
-        </div>
-
-        <div className="lobby-row">
-          <input
-            className="lobby-input"
-            value={joinCode}
-            onChange={(event) => setJoinCode(event.target.value.toUpperCase())}
-            placeholder="private room code"
-          />
-          <button
-            className={classnames("lobby-btn", "custome-shadow")}
-            type="button"
-            disabled={isLoading}
-            onClick={() => void joinRoom(joinCode)}
-          >
-            Join by Code
-          </button>
-          <button
-            className={classnames("lobby-btn", "custome-shadow")}
-            type="button"
-            onClick={() => {
-              refreshPublicRooms().catch(() => {
-                setMessage("Could not refresh public rooms");
-              });
-            }}
-          >
-            Refresh List
-          </button>
-        </div>
-
-        <div className="public-rooms">
-          <h2>Public Rooms</h2>
-          {publicRooms.length === 0 ? (
-            <p>No public rooms yet.</p>
-          ) : (
-            publicRooms.map((roomItem) => (
-              <div key={roomItem.code} className="public-room-item">
-                <div>
-                  <p className="public-room-title">{roomItem.name}</p>
-                  <p className="public-room-meta">
-                    {roomItem.status === "waiting" ? (
-                      <AiOutlineClockCircle />
-                    ) : roomItem.status === "playing" ? (
-                      <AiOutlinePlayCircle />
-                    ) : (
-                      <AiOutlineCheckCircle />
-                    )}{" "}
-                    {roomItem.status} | {roomItem.code} | <AiOutlineTeam />{" "}
-                    {roomItem.playersCount}/2 players
-                  </p>
-                </div>
-                <button
-                  className={classnames("lobby-btn", "custome-shadow")}
-                  type="button"
-                  disabled={isLoading}
-                  onClick={() => void joinRoom(roomItem.code)}
-                >
-                  Join
-                </button>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-
-      {message ? <p className="lobby-message">{message}</p> : null}
-    </section>
-  );
-
-  const renderLeaderboard = () => (
-    <section className="title-screen-content">
-      <h1>
-        <span>Leader-</span>
-        <span>Board</span>
-      </h1>
-
-      <div className="lobby-card mt-8">
-        <div className="lobby-row">
-          <button className="lobby-back" type="button" onClick={() => setScreen("home")}>
-            <AiOutlineArrowLeft /> Back
-          </button>
-          <button
-            className={classnames("lobby-btn", "custome-shadow")}
-            type="button"
-            onClick={() => {
-              refreshLeaderboard().catch(() => {
-                setMessage("Could not refresh leaderboard");
-              });
-            }}
-          >
-            Refresh
-          </button>
-        </div>
-
-        <div className="leaderboard-list">
-          {leaderboard.length === 0 ? (
-            <p>No players found yet.</p>
-          ) : (
-            leaderboard.map((entry, index) => (
-              <div key={entry.playerId} className="leaderboard-item">
-                <div className="leaderboard-rank">#{index + 1}</div>
-                <img
-                  src={`https://robohash.org/${entry.name}`}
-                  alt={`${entry.name} avatar`}
-                  className="leaderboard-avatar"
-                />
-                <div className="leaderboard-meta">
-                  <p>{entry.name}</p>
-                  <p>
-                    <span className="lb-win">W {entry.wins}</span> |{" "}
-                    <span className="lb-loss">L {entry.losses}</span> | D {entry.draws}
-                  </p>
-                </div>
-                <div className="leaderboard-score">{entry.score} pts</div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-    </section>
-  );
-
-  const renderSettings = () => (
-    <section className="title-screen-content">
-      <h1>
-        <span>Set-</span>
-        <span>tings</span>
-      </h1>
-
-      <div className="lobby-card mt-8">
-        <div className="lobby-row">
-          <button className="lobby-back" type="button" onClick={() => setScreen("home")}>
-            <AiOutlineArrowLeft /> Back
-          </button>
-        </div>
-
-        <div className="settings-item">
-          <p>Mute Music</p>
-          <button
-            className={classnames("lobby-btn", "custome-shadow")}
-            type="button"
-            onClick={() => {
-              const nextValue = !isMusicMuted;
-              setIsMusicMuted(nextValue);
-              window.localStorage.setItem("ttt_music_muted", String(nextValue));
-            }}
-          >
-            {isMusicMuted ? "Muted" : "On"}
-          </button>
-        </div>
-
-        <div className="settings-item">
-          <p>Enable Motion</p>
-          <button
-            className={classnames("lobby-btn", "custome-shadow")}
-            type="button"
-            onClick={() => {
-              const nextValue = !enableAnimations;
-              setEnableAnimations(nextValue);
-              window.localStorage.setItem("ttt_enable_animations", String(nextValue));
-            }}
-          >
-            {enableAnimations ? "Enabled" : "Disabled"}
-          </button>
-        </div>
-      </div>
-    </section>
-  );
-
-  const renderScreen = () => {
-    if (screen === "home") {
-      return renderHomeScreen();
+          onSettings={() => setScreen("settings")}
+        />
+      );
     }
 
     if (screen === "lobby") {
-      return renderLobbyScreen();
+      return (
+        <LobbyScreen
+          playerName={playerName}
+          roomName={roomName}
+          joinCode={joinCode}
+          publicRooms={publicRooms}
+          message={message}
+          isLoading={isLoading}
+          onBack={() => setScreen("home")}
+          onPlayerNameChange={setPlayerName}
+          onRoomNameChange={setRoomName}
+          onJoinCodeChange={setJoinCode}
+          onSaveName={() => {
+            ensurePlayer()
+              .then((registeredPlayer) => {
+                setPlayer(registeredPlayer);
+                setMessage("Profile saved");
+              })
+              .catch((error) => {
+                setMessage(error instanceof Error ? error.message : "Could not save profile");
+              });
+          }}
+          onCreatePublic={() => void createRoom(true)}
+          onCreatePrivate={() => void createRoom(false)}
+          onJoinByCode={() => void joinRoom(joinCode)}
+          onRefreshRooms={() => {
+            refreshPublicRooms().catch(() => {
+              setMessage("Could not refresh public rooms");
+            });
+          }}
+          onJoinRoom={(code) => void joinRoom(code)}
+          onPlayCpu={() => void startCpuMatch()}
+        />
+      );
     }
 
     if (screen === "leaderboard") {
-      return renderLeaderboard();
+      return (
+        <LeaderboardScreen
+          leaderboard={leaderboard}
+          onBack={() => setScreen("home")}
+          onRefresh={() => {
+            refreshLeaderboard().catch(() => {
+              setMessage("Could not refresh leaderboard");
+            });
+          }}
+        />
+      );
     }
 
     if (screen === "settings") {
-      return renderSettings();
+      return (
+        <SettingsScreen
+          isMusicMuted={isMusicMuted}
+          enableAnimations={enableAnimations}
+          cpuDifficulty={cpuDifficulty}
+          onBack={() => setScreen("home")}
+          onToggleMusic={() => {
+            const nextValue = !isMusicMuted;
+            setIsMusicMuted(nextValue);
+            window.localStorage.setItem(STORAGE_KEYS.musicMuted, String(nextValue));
+          }}
+          onToggleAnimations={() => {
+            const nextValue = !enableAnimations;
+            setEnableAnimations(nextValue);
+            window.localStorage.setItem(STORAGE_KEYS.enableAnimations, String(nextValue));
+          }}
+          onCpuDifficultyChange={(difficulty) => {
+            setCpuDifficulty(difficulty);
+            window.localStorage.setItem(STORAGE_KEYS.cpuDifficulty, difficulty);
+          }}
+        />
+      );
     }
 
-    if (screen === "game" && activeRoomCode && player) {
+    if (screen === "game" && player) {
       return (
         <TicTacToe
+          mode={gameMode}
           roomCode={activeRoomCode}
           player={player}
           isMusicMuted={isMusicMuted}
+          cpuDifficulty={cpuDifficulty}
           runWithLoader={runWithLoader}
           onToggleMusic={() => {
             const nextValue = !isMusicMuted;
             setIsMusicMuted(nextValue);
-            window.localStorage.setItem("ttt_music_muted", String(nextValue));
+            window.localStorage.setItem(STORAGE_KEYS.musicMuted, String(nextValue));
           }}
           onProfileUpdate={(updatedPlayer) => {
             setPlayer(updatedPlayer);
           }}
           onLeave={() => {
             setActiveRoomCode(null);
+            setGameMode("online");
             setScreen("lobby");
             refreshPublicRooms().catch(() => {
               // ignore
@@ -572,10 +339,8 @@ export default function Home() {
       );
     }
 
-    return renderHomeScreen();
+    return null;
   };
-
-  const isInMatch = screen === "game" && Boolean(activeRoomCode && player);
 
   return (
     <main
@@ -587,14 +352,7 @@ export default function Home() {
     >
       {!isInMatch ? renderTopBar() : null}
       {renderScreen()}
-      {activeRequests > 0 ? (
-        <div className="app-loader-overlay">
-          <div className="app-loader-card">
-            <AiOutlineLoading3Quarters className="loader-spin" />
-            <span>Syncing Match Data...</span>
-          </div>
-        </div>
-      ) : null}
+      <AppLoader active={activeRequests > 0} />
       <audio autoPlay={true} loop={true} muted={isMusicMuted} src="Loli.mp3" />
       {!isInMatch ? (
         <span className="fixed bottom-1 text-sm">Project By AJ4200 c 2023</span>
