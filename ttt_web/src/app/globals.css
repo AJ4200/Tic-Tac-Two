@@ -159,6 +159,16 @@ h1 span:last-child {
   padding: 0.5rem 0.75rem;
 }
 
+.public-room-title {
+  font-size: 1.2rem;
+}
+
+.public-room-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
 .lobby-message {
   margin-top: 0.75rem;
   color: #fff8d9;
@@ -233,6 +243,14 @@ h1 span:last-child {
   white-space: nowrap;
 }
 
+.lb-win {
+  color: #6bff7a;
+}
+
+.lb-loss {
+  color: #ff7373;
+}
+
 .settings-item {
   margin-bottom: 0.75rem;
   display: flex;
@@ -249,6 +267,144 @@ h1 span:last-child {
 .motion-off *::after {
   animation: none !important;
   transition: none !important;
+}
+
+.app-loader-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 6, 18, 0.48);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 80;
+}
+
+.app-loader-card {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  border: 4px solid black;
+  border-radius: 999px;
+  padding: 0.8rem 1.2rem;
+  background: linear-gradient(130deg, #e73c7e, #23a6d5, #23d5ab);
+  color: white;
+}
+
+.loader-spin {
+  animation: loaderSpin 1s linear infinite;
+}
+
+.room-float-card {
+  position: fixed;
+  bottom: 1.4rem;
+  right: 1.4rem;
+  z-index: 50;
+  width: min(88vw, 380px);
+  border: 10px solid;
+  border-color: #ffe37a;
+  background: transparent;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.35);
+  padding: 0.6rem 0.75rem;
+  cursor: grab;
+  user-select: none;
+  transform: skewX(-5deg);
+  animation: playerAnimation 5s infinite;
+}
+
+.room-float-card:active {
+  cursor: grabbing;
+}
+
+.room-float-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.45rem;
+}
+
+.room-float-anchor {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border: 2px dashed rgba(255, 255, 255, 0.7);
+  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
+  font-size: 0.82rem;
+}
+
+.room-float-title {
+  font-size: 1rem;
+  text-align: right;
+}
+
+.room-score-strip {
+  background: black;
+  padding: 0.35rem 0.45rem;
+  margin-bottom: 0.55rem;
+}
+
+.room-float-line {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.room-joined {
+  margin-bottom: 0.6rem;
+}
+
+.room-joined-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-bottom: 0.3rem;
+}
+
+.room-joined-line {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-bottom: 0.2rem;
+}
+
+.room-float-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.room-float-leave {
+  border-radius: 999px;
+  border: 2px solid black;
+  background: #f55;
+  color: white;
+  padding: 0.45rem 0.8rem;
+}
+
+.room-leave-round {
+  background: #f55;
+}
+
+.player-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.player-state.you {
+  color: #f9f871;
+}
+
+.player-state.ready {
+  color: #89ffbd;
+}
+
+.player-state.winner {
+  color: #ffe97c;
 }
 
 .main-menu-btn,
@@ -445,6 +601,15 @@ transform: skewX(-5deg);
     background-position: 0% 50%;
   }
 }
+
+@keyframes loaderSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
 /* Existing styles... */
 
 @media (max-width: 768px) {
@@ -470,6 +635,12 @@ transform: skewX(-5deg);
   margin-bottom: 30px;
 
 }
+  .room-float-card {
+    width: min(95vw, 360px);
+  }
+  .room-float-actions {
+    flex-wrap: wrap;
+  }
 .reset-container{
   top:50%;
 }

@@ -11,6 +11,11 @@ import {
   AiFillSetting,
   AiOutlineTrophy,
   AiOutlineArrowLeft,
+  AiOutlineLoading3Quarters,
+  AiOutlineClockCircle,
+  AiOutlinePlayCircle,
+  AiOutlineCheckCircle,
+  AiOutlineTeam,
 } from "react-icons/ai";
 import TicTacToe, { PlayerProfile } from "./TicTacToe";
 
@@ -61,19 +66,42 @@ export default function Home() {
   const [isMusicMuted, setIsMusicMuted] = useState(false);
   const [enableAnimations, setEnableAnimations] = useState(true);
   const [matchBackgroundColor, setMatchBackgroundColor] = useState("#ffffff");
+  const [activeRequests, setActiveRequests] = useState(0);
 
-  const callApi = async <T,>(path: string, init?: RequestInit): Promise<T> => {
-    const response = await fetch(`${API_BASE_URL}${path}`, {
-      headers: { "Content-Type": "application/json" },
-      ...init,
-    });
-
-    const payload = await response.json();
-    if (!response.ok) {
-      throw new Error(payload?.error || "Request failed");
+  const runWithLoader = async <T,>(
+    task: () => Promise<T>,
+    showLoader = true
+  ): Promise<T> => {
+    if (showLoader) {
+      setActiveRequests((current) => current + 1);
     }
+    try {
+      return await task();
+    } finally {
+      if (showLoader) {
+        setActiveRequests((current) => Math.max(0, current - 1));
+      }
+    }
+  };
 
-    return payload as T;
+  const callApi = async <T,>(
+    path: string,
+    init?: RequestInit,
+    showLoader = true
+  ): Promise<T> => {
+    return runWithLoader(async () => {
+      const response = await fetch(`${API_BASE_URL}${path}`, {
+        headers: { "Content-Type": "application/json" },
+        ...init,
+      });
+
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload?.error || "Request failed");
+      }
+
+      return payload as T;
+    }, showLoader);
   };
 
   const refreshPublicRooms = async () => {
@@ -367,9 +395,17 @@ export default function Home() {
             publicRooms.map((roomItem) => (
               <div key={roomItem.code} className="public-room-item">
                 <div>
-                  <p>{roomItem.name}</p>
-                  <p>
-                    {roomItem.code} | {roomItem.status} | {roomItem.playersCount}/2 players
+                  <p className="public-room-title">{roomItem.name}</p>
+                  <p className="public-room-meta">
+                    {roomItem.status === "waiting" ? (
+                      <AiOutlineClockCircle />
+                    ) : roomItem.status === "playing" ? (
+                      <AiOutlinePlayCircle />
+                    ) : (
+                      <AiOutlineCheckCircle />
+                    )}{" "}
+                    {roomItem.status} | {roomItem.code} | <AiOutlineTeam />{" "}
+                    {roomItem.playersCount}/2 players
                   </p>
                 </div>
                 <button
@@ -430,7 +466,8 @@ export default function Home() {
                 <div className="leaderboard-meta">
                   <p>{entry.name}</p>
                   <p>
-                    W {entry.wins} | L {entry.losses} | D {entry.draws}
+                    <span className="lb-win">W {entry.wins}</span> |{" "}
+                    <span className="lb-loss">L {entry.losses}</span> | D {entry.draws}
                   </p>
                 </div>
                 <div className="leaderboard-score">{entry.score} pts</div>
@@ -512,6 +549,7 @@ export default function Home() {
           roomCode={activeRoomCode}
           player={player}
           isMusicMuted={isMusicMuted}
+          runWithLoader={runWithLoader}
           onToggleMusic={() => {
             const nextValue = !isMusicMuted;
             setIsMusicMuted(nextValue);
@@ -549,6 +587,14 @@ export default function Home() {
     >
       {!isInMatch ? renderTopBar() : null}
       {renderScreen()}
+      {activeRequests > 0 ? (
+        <div className="app-loader-overlay">
+          <div className="app-loader-card">
+            <AiOutlineLoading3Quarters className="loader-spin" />
+            <span>Syncing Match Data...</span>
+          </div>
+        </div>
+      ) : null}
       <audio autoPlay={true} loop={true} muted={isMusicMuted} src="Loli.mp3" />
       {!isInMatch ? (
         <span className="fixed bottom-1 text-sm">Project By AJ4200 c 2023</span>

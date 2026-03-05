@@ -5,7 +5,17 @@ import X from "../components/game/X";
 import O from "../components/game/O";
 import PlayerO from "@/components/game/player/PlayerO";
 import PlayerX from "@/components/game/player/PlayerX";
-import { AiOutlineReload, AiOutlineSound } from "react-icons/ai";
+import {
+  AiOutlineReload,
+  AiOutlineSound,
+  AiOutlineClockCircle,
+  AiOutlinePlayCircle,
+  AiOutlineCheckCircle,
+  AiOutlineUser,
+  AiOutlineCrown,
+  AiOutlineDrag,
+  AiOutlineTeam,
+} from "react-icons/ai";
 import { IconContext } from "react-icons";
 import { motion } from "framer-motion";
 
@@ -49,6 +59,7 @@ type TicTacToeProps = {
   player: PlayerProfile;
   isMusicMuted: boolean;
   onToggleMusic: () => void;
+  runWithLoader: <T>(task: () => Promise<T>, showLoader?: boolean) => Promise<T>;
   onProfileUpdate: (player: PlayerProfile) => void;
   onLeave: () => void;
 };
@@ -67,6 +78,7 @@ const TicTacToe: React.FC<TicTacToeProps> = ({
   player,
   isMusicMuted,
   onToggleMusic,
+  runWithLoader,
   onProfileUpdate,
   onLeave,
 }) => {
@@ -110,18 +122,24 @@ const TicTacToe: React.FC<TicTacToeProps> = ({
     room && yourSymbol && room.status === "playing" && room.turn === yourSymbol
   );
 
-  const callApi = async <T,>(path: string, init?: RequestInit): Promise<T> => {
-    const response = await fetch(`${API_BASE_URL}${path}`, {
-      headers: { "Content-Type": "application/json" },
-      ...init,
-    });
+  const callApi = async <T,>(
+    path: string,
+    init?: RequestInit,
+    showLoader = true
+  ): Promise<T> => {
+    return runWithLoader(async () => {
+      const response = await fetch(`${API_BASE_URL}${path}`, {
+        headers: { "Content-Type": "application/json" },
+        ...init,
+      });
 
-    const payload = await response.json();
-    if (!response.ok) {
-      throw new Error(payload?.error || "Request failed");
-    }
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload?.error || "Request failed");
+      }
 
-    return payload as T;
+      return payload as T;
+    }, showLoader);
   };
 
   const applyPayload = (payload: RoomPayload) => {
@@ -134,7 +152,11 @@ const TicTacToe: React.FC<TicTacToeProps> = ({
 
   const syncRoom = async () => {
     const payload = await callApi<RoomPayload>(
-      `/api/rooms/${encodeURIComponent(roomCode)}?playerId=${encodeURIComponent(player.playerId)}`
+      `/api/rooms/${encodeURIComponent(roomCode)}?playerId=${encodeURIComponent(
+        player.playerId
+      )}`,
+      undefined,
+      false
     );
     applyPayload(payload);
   };
@@ -222,6 +244,15 @@ const TicTacToe: React.FC<TicTacToeProps> = ({
     };
   }, [roomCode, player.playerId]);
 
+  const roomStatusIcon =
+    room?.status === "waiting" ? (
+      <AiOutlineClockCircle />
+    ) : room?.status === "playing" ? (
+      <AiOutlinePlayCircle />
+    ) : (
+      <AiOutlineCheckCircle />
+    );
+
   const renderSquare = (index: number): React.JSX.Element => (
     <div className="square" onClick={() => void handleMove(index)}>
       {room?.board[index] === "X" ? <X /> : room?.board[index] === "O" ? <O /> : null}
@@ -230,15 +261,99 @@ const TicTacToe: React.FC<TicTacToeProps> = ({
 
   return (
     <>
+         <div>  
+          <h1>
+      <span>Tic-</span>
+      <span>Tac</span>
+      <span>-Two</span>
+    </h1></div>
       <div>
-        <div className="fixed top-10 left-10 flex gap-2 items-center">
-          <div className="status">{room ? `${room.name} (${room.code})` : "Loading"}</div>
-          <button className="mute" onClick={() => void handleLeave()} type="button">
-            Leave
-          </button>
-        </div>
 
-        <div className="status">{status}</div>
+        <motion.div drag className="room-float-card">
+          <div className="room-float-header">
+            <span className="room-float-anchor">
+              <AiOutlineDrag /> drag
+            </span>
+            <span className="room-float-title">
+              {room ? `${room.name} (${room.code})` : "Loading room"}
+            </span>
+          </div>
+
+          <div className="room-score-strip">
+            <span className="room-float-line">
+              {roomStatusIcon} {status}
+            </span>
+          </div>
+
+          <div className="room-joined">
+            <p className="room-joined-title">
+              <AiOutlineTeam /> Joined Players
+            </p>
+            {room?.players && room.players.length > 0 ? (
+              room.players.map((joinedPlayer) => (
+                <p key={joinedPlayer.playerId} className="room-joined-line">
+                  {joinedPlayer.symbol === "X" ? <AiOutlinePlayCircle /> : <AiOutlineCheckCircle />}{" "}
+                  {joinedPlayer.name} ({joinedPlayer.symbol})
+                </p>
+              ))
+            ) : (
+              <p className="room-joined-line">
+                <AiOutlineClockCircle /> Waiting...
+              </p>
+            )}
+          </div>
+
+          <div className="room-float-actions">
+            <motion.button
+              className="reset"
+              onClick={() => void handleRematch()}
+              variants={buttonVariants}
+              initial="initial"
+              whileHover="hover"
+              whileTap="pressed"
+              type="button"
+            >
+              <IconContext.Provider
+                value={{ size: "1.5em", style: { marginRight: "5px" } }}
+              >
+                <AiOutlineReload />
+              </IconContext.Provider>
+              rematch
+            </motion.button>
+
+            <motion.button
+              className="mute"
+              onClick={onToggleMusic}
+              variants={buttonVariants}
+              initial="initial"
+              whileHover="hover"
+              whileTap="pressed"
+              type="button"
+            >
+              <IconContext.Provider
+                value={{ size: "1.5em", style: { marginRight: "5px" } }}
+              >
+                <div className="flex ">
+                  <AiOutlineSound /> {isMusicMuted ? <p>off</p> : ""}
+                </div>
+              </IconContext.Provider>
+              mute
+            </motion.button>
+
+            <motion.button
+              className="reset room-leave-round"
+              onClick={() => void handleLeave()}
+              variants={buttonVariants}
+              initial="initial"
+              whileHover="hover"
+              whileTap="pressed"
+              type="button"
+            >
+              leave
+            </motion.button>
+          </div>
+        </motion.div>
+
         {message ? <div className="status text-red-500">{message}</div> : null}
 
         <div className="board">
@@ -259,43 +374,6 @@ const TicTacToe: React.FC<TicTacToeProps> = ({
           </div>
         </div>
 
-        <div className="fixed flex reset-container">
-          <motion.button
-            className="reset"
-            onClick={() => void handleRematch()}
-            variants={buttonVariants}
-            initial="initial"
-            whileHover="hover"
-            whileTap="pressed"
-            type="button"
-          >
-            <IconContext.Provider
-              value={{ size: "1.5em", style: { marginRight: "5px" } }}
-            >
-              <AiOutlineReload />
-            </IconContext.Provider>
-            rematch
-          </motion.button>
-
-          <motion.button
-            className="mute"
-            onClick={onToggleMusic}
-            variants={buttonVariants}
-            initial="initial"
-            whileHover="hover"
-            whileTap="pressed"
-            type="button"
-          >
-            <IconContext.Provider
-              value={{ size: "1.5em", style: { marginRight: "5px" } }}
-            >
-              <div className="flex ">
-                <AiOutlineSound /> {isMusicMuted ? <p>off</p> : ""}
-              </div>
-            </IconContext.Provider>
-            mute
-          </motion.button>
-        </div>
       </div>
 
       <PlayerX
@@ -304,7 +382,21 @@ const TicTacToe: React.FC<TicTacToeProps> = ({
         wins={xPlayer?.wins || 0}
         losses={xPlayer?.losses || 0}
         draws={xPlayer?.draws || 0}
-        mood={room?.winner === "X" ? "Winner" : yourSymbol === "X" ? "You" : "Ready"}
+        mood={
+          room?.winner === "X" ? (
+            <span className="player-state winner">
+              <AiOutlineCrown /> Winner
+            </span>
+          ) : yourSymbol === "X" ? (
+            <span className="player-state you">
+              <AiOutlineUser /> You
+            </span>
+          ) : (
+            <span className="player-state ready">
+              <AiOutlineCheckCircle /> Ready
+            </span>
+          )
+        }
       />
       <PlayerO
         alias={oPlayer?.name || "Waiting..."}
@@ -312,7 +404,21 @@ const TicTacToe: React.FC<TicTacToeProps> = ({
         wins={oPlayer?.wins || 0}
         losses={oPlayer?.losses || 0}
         draws={oPlayer?.draws || 0}
-        mood={room?.winner === "O" ? "Winner" : yourSymbol === "O" ? "You" : "Ready"}
+        mood={
+          room?.winner === "O" ? (
+            <span className="player-state winner">
+              <AiOutlineCrown /> Winner
+            </span>
+          ) : yourSymbol === "O" ? (
+            <span className="player-state you">
+              <AiOutlineUser /> You
+            </span>
+          ) : (
+            <span className="player-state ready">
+              <AiOutlineCheckCircle /> Ready
+            </span>
+          )
+        }
       />
     </>
   );

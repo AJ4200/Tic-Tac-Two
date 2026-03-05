@@ -8,7 +8,7 @@ interface PlayerXProps {
   wins: number;
   losses: number;
   draws: number;
-  mood: string;
+  mood: React.ReactNode;
 }
 
 const PlayerX: React.FC<PlayerXProps> = ({
