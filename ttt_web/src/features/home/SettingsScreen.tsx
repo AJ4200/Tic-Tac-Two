@@ -7,11 +7,15 @@ type SettingsScreenProps = {
   musicVolume: number;
   enableAnimations: boolean;
   cpuDifficulty: CpuDifficulty;
+  hasLocalSave: boolean;
+  lastSavedAtLabel: string | null;
   onBack: () => void;
   onToggleMusic: () => void;
   onMusicVolumeChange: (volume: number) => void;
   onToggleAnimations: () => void;
   onCpuDifficultyChange: (difficulty: CpuDifficulty) => void;
+  onSaveNow: () => void;
+  onLoadSave: () => void;
 };
 
 export function SettingsScreen({
@@ -19,11 +23,15 @@ export function SettingsScreen({
   musicVolume,
   enableAnimations,
   cpuDifficulty,
+  hasLocalSave,
+  lastSavedAtLabel,
   onBack,
   onToggleMusic,
   onMusicVolumeChange,
   onToggleAnimations,
   onCpuDifficultyChange,
+  onSaveNow,
+  onLoadSave,
 }: SettingsScreenProps) {
   return (
     <section className="title-screen-content">
@@ -81,6 +89,26 @@ export function SettingsScreen({
             <option value="hard">Hard</option>
           </select>
         </div>
+
+        <div className="settings-item settings-item-save">
+          <p>Cloud Reset Backup</p>
+          <div className="settings-save-actions">
+            <button className={classnames("lobby-btn", "custome-shadow")} type="button" onClick={onSaveNow}>
+              Save Now
+            </button>
+            <button
+              className={classnames("lobby-btn", "custome-shadow")}
+              type="button"
+              disabled={!hasLocalSave}
+              onClick={onLoadSave}
+            >
+              Load Save
+            </button>
+          </div>
+        </div>
+        <p className="settings-save-meta">
+          {lastSavedAtLabel ? `Last local save: ${lastSavedAtLabel}` : "No local save found yet"}
+        </p>
       </div>
     </section>
   );

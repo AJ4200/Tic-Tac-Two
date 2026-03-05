@@ -8,4 +8,6 @@ export const STORAGE_KEYS = {
   musicVolume: "ttt_music_volume",
   enableAnimations: "ttt_enable_animations",
   cpuDifficulty: "ttt_cpu_difficulty",
+  localBackup: "ttt_local_backup_v1",
+  hideSaveTip: "ttt_hide_save_tip",
 };

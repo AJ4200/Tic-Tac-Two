@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import classnames from "classnames";
 import { motion } from "framer-motion";
 import { IconContext } from "react-icons";
@@ -24,6 +24,22 @@ import type {
   Screen,
 } from "@/types/game";
 
+type LocalBackupPayload = {
+  version: 1;
+  savedAt: string;
+  playerName: string;
+  player: {
+    name: string;
+    wins: number;
+    losses: number;
+    draws: number;
+  } | null;
+  isMusicMuted: boolean;
+  musicVolume: number;
+  enableAnimations: boolean;
+  cpuDifficulty: CpuDifficulty;
+};
+
 export default function Home() {
   const [screen, setScreen] = useState<Screen>("home");
   const [gameMode, setGameMode] = useState<GameMode>("online");
@@ -42,8 +58,169 @@ export default function Home() {
   const [cpuDifficulty, setCpuDifficulty] = useState<CpuDifficulty>("medium");
   const [matchBackgroundColor, setMatchBackgroundColor] = useState("#ffffff");
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
+  const [hasLocalSave, setHasLocalSave] = useState(false);
+  const [lastLocalSavedAt, setLastLocalSavedAt] = useState<string | null>(null);
+  const [saveIndicator, setSaveIndicator] = useState("");
+  const [showSaveTip, setShowSaveTip] = useState(false);
+  const [dontShowSaveTipAgain, setDontShowSaveTipAgain] = useState(false);
+  const saveIndicatorTimeoutRef = useRef<number | null>(null);
 
   const { activeRequests, runWithLoader, callApi } = useApiClient();
+
+  const getSavedAtLabel = (savedAt: string): string => {
+    const parsed = new Date(savedAt);
+    if (Number.isNaN(parsed.getTime())) {
+      return savedAt;
+    }
+    return parsed.toLocaleString();
+  };
+
+  const showSaveIndicator = useCallback((text: string) => {
+    if (saveIndicatorTimeoutRef.current !== null) {
+      window.clearTimeout(saveIndicatorTimeoutRef.current);
+    }
+    setSaveIndicator(text);
+    saveIndicatorTimeoutRef.current = window.setTimeout(() => {
+      setSaveIndicator("");
+      saveIndicatorTimeoutRef.current = null;
+    }, 1800);
+  }, []);
+
+  const parseLocalBackup = (rawValue: string | null): LocalBackupPayload | null => {
+    if (!rawValue) {
+      return null;
+    }
+
+    try {
+      const parsed = JSON.parse(rawValue) as Partial<LocalBackupPayload>;
+      if (parsed?.version !== 1 || typeof parsed.savedAt !== "string") {
+        return null;
+      }
+      if (
+        parsed.cpuDifficulty !== "easy" &&
+        parsed.cpuDifficulty !== "medium" &&
+        parsed.cpuDifficulty !== "hard"
+      ) {
+        return null;
+      }
+      if (
+        typeof parsed.playerName !== "string" ||
+        typeof parsed.isMusicMuted !== "boolean" ||
+        typeof parsed.musicVolume !== "number" ||
+        typeof parsed.enableAnimations !== "boolean"
+      ) {
+        return null;
+      }
+
+      return {
+        version: 1,
+        savedAt: parsed.savedAt,
+        playerName: parsed.playerName,
+        player:
+          parsed.player &&
+          typeof parsed.player.name === "string" &&
+          typeof parsed.player.wins === "number" &&
+          typeof parsed.player.losses === "number" &&
+          typeof parsed.player.draws === "number"
+            ? {
+                name: parsed.player.name,
+                wins: parsed.player.wins,
+                losses: parsed.player.losses,
+                draws: parsed.player.draws,
+              }
+            : null,
+        isMusicMuted: parsed.isMusicMuted,
+        musicVolume: Math.min(100, Math.max(0, parsed.musicVolume)),
+        enableAnimations: parsed.enableAnimations,
+        cpuDifficulty: parsed.cpuDifficulty,
+      };
+    } catch (_error) {
+      return null;
+    }
+  };
+
+  const saveLocalBackup = useCallback(
+    (mode: "auto" | "manual") => {
+      const payload: LocalBackupPayload = {
+        version: 1,
+        savedAt: new Date().toISOString(),
+        playerName,
+        player: player
+          ? {
+              name: player.name,
+              wins: player.wins,
+              losses: player.losses,
+              draws: player.draws,
+            }
+          : null,
+        isMusicMuted,
+        musicVolume,
+        enableAnimations,
+        cpuDifficulty,
+      };
+
+      window.localStorage.setItem(STORAGE_KEYS.localBackup, JSON.stringify(payload));
+      setHasLocalSave(true);
+      setLastLocalSavedAt(payload.savedAt);
+      showSaveIndicator(mode === "auto" ? "Auto-saved local backup" : "Local backup saved");
+    },
+    [cpuDifficulty, enableAnimations, isMusicMuted, musicVolume, player, playerName, showSaveIndicator]
+  );
+
+  const loadLocalBackup = useCallback(() => {
+    const payload = parseLocalBackup(window.localStorage.getItem(STORAGE_KEYS.localBackup));
+    if (!payload) {
+      setMessage("No valid local save found");
+      return;
+    }
+
+    setPlayerName(payload.playerName || "Player");
+    window.localStorage.setItem(STORAGE_KEYS.playerName, payload.playerName || "Player");
+
+    setIsMusicMuted(payload.isMusicMuted);
+    window.localStorage.setItem(STORAGE_KEYS.musicMuted, String(payload.isMusicMuted));
+
+    setMusicVolume(payload.musicVolume);
+    window.localStorage.setItem(STORAGE_KEYS.musicVolume, String(payload.musicVolume));
+
+    setEnableAnimations(payload.enableAnimations);
+    window.localStorage.setItem(STORAGE_KEYS.enableAnimations, String(payload.enableAnimations));
+
+    setCpuDifficulty(payload.cpuDifficulty);
+    window.localStorage.setItem(STORAGE_KEYS.cpuDifficulty, payload.cpuDifficulty);
+
+    if (payload.player) {
+      setPlayer((currentValue) => {
+        if (currentValue) {
+          return {
+            ...currentValue,
+            name: payload.player?.name || currentValue.name,
+            wins: payload.player?.wins ?? currentValue.wins,
+            losses: payload.player?.losses ?? currentValue.losses,
+            draws: payload.player?.draws ?? currentValue.draws,
+          };
+        }
+
+        const savedPlayerId = window.localStorage.getItem(STORAGE_KEYS.playerId);
+        if (!savedPlayerId) {
+          return null;
+        }
+
+        return {
+          playerId: savedPlayerId,
+          name: payload.player.name,
+          wins: payload.player.wins,
+          losses: payload.player.losses,
+          draws: payload.player.draws,
+        };
+      });
+    }
+
+    setHasLocalSave(true);
+    setLastLocalSavedAt(payload.savedAt);
+    showSaveIndicator("Local save loaded");
+    setMessage("Loaded local save data");
+  }, [showSaveIndicator]);
 
   const refreshPublicRooms = async () => {
     const payload = await callApi<{ rooms: PublicRoom[] }>("/api/rooms/public");
@@ -180,6 +357,13 @@ export default function Home() {
     if (savedDifficulty === "easy" || savedDifficulty === "medium" || savedDifficulty === "hard") {
       setCpuDifficulty(savedDifficulty);
     }
+    const savedBackup = parseLocalBackup(window.localStorage.getItem(STORAGE_KEYS.localBackup));
+    if (savedBackup) {
+      setHasLocalSave(true);
+      setLastLocalSavedAt(savedBackup.savedAt);
+    }
+    const shouldHideSaveTip = window.localStorage.getItem(STORAGE_KEYS.hideSaveTip);
+    setShowSaveTip(shouldHideSaveTip !== "true");
 
     ensurePlayer().catch(() => {
       // Registration can be retried from UI.
@@ -190,6 +374,24 @@ export default function Home() {
     refreshLeaderboard().catch(() => {
       // Ignore initial leaderboard load failures.
     });
+  }, []);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      saveLocalBackup("auto");
+    }, 5 * 60 * 1000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [saveLocalBackup]);
+
+  useEffect(() => {
+    return () => {
+      if (saveIndicatorTimeoutRef.current !== null) {
+        window.clearTimeout(saveIndicatorTimeoutRef.current);
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -306,6 +508,8 @@ export default function Home() {
           musicVolume={musicVolume}
           enableAnimations={enableAnimations}
           cpuDifficulty={cpuDifficulty}
+          hasLocalSave={hasLocalSave}
+          lastSavedAtLabel={lastLocalSavedAt ? getSavedAtLabel(lastLocalSavedAt) : null}
           onBack={() => setScreen("home")}
           onToggleMusic={() => {
             const nextValue = !isMusicMuted;
@@ -324,6 +528,12 @@ export default function Home() {
           onCpuDifficultyChange={(difficulty) => {
             setCpuDifficulty(difficulty);
             window.localStorage.setItem(STORAGE_KEYS.cpuDifficulty, difficulty);
+          }}
+          onSaveNow={() => {
+            saveLocalBackup("manual");
+          }}
+          onLoadSave={() => {
+            loadLocalBackup();
           }}
         />
       );
@@ -375,6 +585,34 @@ export default function Home() {
       {!isInMatch ? renderTopBar() : null}
       {renderScreen()}
       <AppLoader active={activeRequests > 0} />
+      {saveIndicator ? <div className="save-indicator">{saveIndicator}</div> : null}
+      {showSaveTip ? (
+        <div className="save-tip-card">
+          <p>
+            Server stats can reset after redeploy. Go to Settings any time to load your local save backup.
+          </p>
+          <label className="save-tip-check">
+            <input
+              type="checkbox"
+              checked={dontShowSaveTipAgain}
+              onChange={(event) => setDontShowSaveTipAgain(event.target.checked)}
+            />
+            Don&apos;t show again
+          </label>
+          <button
+            className={classnames("lobby-btn", "custome-shadow")}
+            type="button"
+            onClick={() => {
+              if (dontShowSaveTipAgain) {
+                window.localStorage.setItem(STORAGE_KEYS.hideSaveTip, "true");
+              }
+              setShowSaveTip(false);
+            }}
+          >
+            Got it
+          </button>
+        </div>
+      ) : null}
       <audio
         autoPlay={true}
         loop={true}
