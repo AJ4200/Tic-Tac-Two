@@ -169,6 +169,26 @@ h1 span:last-child {
   gap: 0.35rem;
 }
 
+.public-room-code-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 6px;
+  background: #000;
+  color: #fff;
+  padding: 0.05rem 0.4rem;
+}
+
+.room-code-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #000;
+  border-radius: 6px;
+  background: #000;
+  color: #fff;
+  padding: 0.15rem 0.3rem;
+}
+
 .lobby-message {
   margin-top: 0.75rem;
   color: #fff8d9;
@@ -271,6 +291,27 @@ h1 span:last-child {
   text-shadow: none;
 }
 
+.settings-item-volume {
+  align-items: flex-start;
+}
+
+.settings-volume {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 220px;
+}
+
+.settings-slider {
+  width: 100%;
+  accent-color: #222;
+}
+
+.settings-volume-value {
+  min-width: 3.2rem;
+  text-align: right;
+}
+
 .motion-off *,
 .motion-off *::before,
 .motion-off *::after {
@@ -304,11 +345,19 @@ h1 span:last-child {
   animation: loaderSpin 1s linear infinite;
 }
 
-.room-float-card {
+.room-float-drag-root {
   position: fixed;
   bottom: 1.4rem;
   right: 1.4rem;
   z-index: 50;
+  cursor: grab;
+}
+
+.room-float-drag-root:active {
+  cursor: grabbing;
+}
+
+.room-float-card {
   width: min(88vw, 380px);
   border: 10px solid;
   border-color: #ffe37a;
@@ -316,14 +365,18 @@ h1 span:last-child {
   backdrop-filter: blur(10px);
   box-shadow: 0 16px 30px rgba(0, 0, 0, 0.35);
   padding: 0.6rem 0.75rem;
-  cursor: grab;
   user-select: none;
   transform: skewX(-5deg);
-  animation: playerAnimation 5s infinite;
+  animation: roomFloatHover 5s infinite;
 }
 
-.room-float-card:active {
-  cursor: grabbing;
+.room-float-card-collapsed {
+  width: 96px;
+  height: 96px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .room-float-header {
@@ -347,6 +400,30 @@ h1 span:last-child {
 .room-float-title {
   font-size: 1rem;
   text-align: right;
+}
+
+.room-float-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  border: 2px solid black;
+  background: rgba(0, 0, 0, 0.55);
+  color: white;
+}
+
+.room-float-collapsed-center {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: transparent;
+  color: white;
+  font-size: 2.2rem;
 }
 
 .room-score-strip {
@@ -579,6 +656,16 @@ transform: skewX(-5deg);
   }
 }
 
+@keyframes roomFloatHover {
+  0%,
+  100% {
+    transform: skewX(-5deg) translateY(0px);
+  }
+  50% {
+    transform: skewX(-5deg) translateY(15px);
+  }
+}
+
 @keyframes bop {
   0% {
     transform: scale(0.9);
@@ -646,6 +733,10 @@ transform: skewX(-5deg);
 }
   .room-float-card {
     width: min(95vw, 360px);
+  }
+  .room-float-card.room-float-card-collapsed {
+    width: 96px;
+    height: 96px;
   }
   .room-float-actions {
     flex-wrap: wrap;

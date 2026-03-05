@@ -3,10 +3,12 @@ import {
   AiOutlineArrowLeft,
   AiOutlineCheckCircle,
   AiOutlineClockCircle,
+  AiOutlineCopy,
   AiOutlinePlayCircle,
   AiOutlineRobot,
   AiOutlineTeam,
 } from "react-icons/ai";
+import { useState } from "react";
 import type { PublicRoom } from "@/types/game";
 
 type LobbyScreenProps = {
@@ -48,6 +50,20 @@ export function LobbyScreen({
   onJoinRoom,
   onPlayCpu,
 }: LobbyScreenProps) {
+  const [copiedRoomCode, setCopiedRoomCode] = useState<string | null>(null);
+
+  const handleCopyRoomCode = async (code: string) => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopiedRoomCode(code);
+      window.setTimeout(() => {
+        setCopiedRoomCode((currentValue) => (currentValue === code ? null : currentValue));
+      }, 1200);
+    } catch (_error) {
+      // Ignore clipboard errors to avoid blocking the UI.
+    }
+  };
+
   return (
     <section className="title-screen-content">
       <h1>
@@ -140,7 +156,18 @@ export function LobbyScreen({
                     ) : (
                       <AiOutlineCheckCircle />
                     )}{" "}
-                    {roomItem.status} | {roomItem.code} | <AiOutlineTeam /> {roomItem.playersCount}/2 players
+                    {roomItem.status} |{" "}
+                    <span className="public-room-code-badge">{roomItem.code}</span>
+                    <button
+                      className="room-code-copy-btn"
+                      type="button"
+                      onClick={() => void handleCopyRoomCode(roomItem.code)}
+                      aria-label={`Copy room code ${roomItem.code}`}
+                      title={copiedRoomCode === roomItem.code ? "Copied" : "Copy room code"}
+                    >
+                      <AiOutlineCopy />
+                    </button>
+                    | <AiOutlineTeam /> {roomItem.playersCount}/2 players
                   </p>
                 </div>
                 <button

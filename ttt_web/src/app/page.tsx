@@ -37,9 +37,11 @@ export default function Home() {
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isMusicMuted, setIsMusicMuted] = useState(false);
+  const [musicVolume, setMusicVolume] = useState(70);
   const [enableAnimations, setEnableAnimations] = useState(true);
   const [cpuDifficulty, setCpuDifficulty] = useState<CpuDifficulty>("medium");
   const [matchBackgroundColor, setMatchBackgroundColor] = useState("#ffffff");
+  const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
 
   const { activeRequests, runWithLoader, callApi } = useApiClient();
 
@@ -156,6 +158,7 @@ export default function Home() {
   useEffect(() => {
     const savedName = window.localStorage.getItem(STORAGE_KEYS.playerName);
     const savedMuted = window.localStorage.getItem(STORAGE_KEYS.musicMuted);
+    const savedVolume = window.localStorage.getItem(STORAGE_KEYS.musicVolume);
     const savedAnimations = window.localStorage.getItem(STORAGE_KEYS.enableAnimations);
     const savedDifficulty = window.localStorage.getItem(STORAGE_KEYS.cpuDifficulty);
 
@@ -164,6 +167,12 @@ export default function Home() {
     }
     if (savedMuted) {
       setIsMusicMuted(savedMuted === "true");
+    }
+    if (savedVolume) {
+      const parsedVolume = Number(savedVolume);
+      if (Number.isFinite(parsedVolume)) {
+        setMusicVolume(Math.min(100, Math.max(0, parsedVolume)));
+      }
     }
     if (savedAnimations) {
       setEnableAnimations(savedAnimations === "true");
@@ -182,6 +191,14 @@ export default function Home() {
       // Ignore initial leaderboard load failures.
     });
   }, []);
+
+  useEffect(() => {
+    if (!audioElement) {
+      return;
+    }
+    audioElement.muted = isMusicMuted;
+    audioElement.volume = musicVolume / 100;
+  }, [audioElement, isMusicMuted, musicVolume]);
 
   const isInMatch = screen === "game" && Boolean(player);
 
@@ -286,6 +303,7 @@ export default function Home() {
       return (
         <SettingsScreen
           isMusicMuted={isMusicMuted}
+          musicVolume={musicVolume}
           enableAnimations={enableAnimations}
           cpuDifficulty={cpuDifficulty}
           onBack={() => setScreen("home")}
@@ -293,6 +311,10 @@ export default function Home() {
             const nextValue = !isMusicMuted;
             setIsMusicMuted(nextValue);
             window.localStorage.setItem(STORAGE_KEYS.musicMuted, String(nextValue));
+          }}
+          onMusicVolumeChange={(volume) => {
+            setMusicVolume(volume);
+            window.localStorage.setItem(STORAGE_KEYS.musicVolume, String(volume));
           }}
           onToggleAnimations={() => {
             const nextValue = !enableAnimations;
@@ -353,7 +375,13 @@ export default function Home() {
       {!isInMatch ? renderTopBar() : null}
       {renderScreen()}
       <AppLoader active={activeRequests > 0} />
-      <audio autoPlay={true} loop={true} muted={isMusicMuted} src="Loli.mp3" />
+      <audio
+        autoPlay={true}
+        loop={true}
+        muted={isMusicMuted}
+        ref={setAudioElement}
+        src="Loli.mp3"
+      />
       {!isInMatch ? (
         <span className="fixed bottom-1 text-sm">Project By AJ4200 c 2023</span>
       ) : null}

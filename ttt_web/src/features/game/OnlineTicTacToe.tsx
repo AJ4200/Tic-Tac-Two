@@ -12,6 +12,7 @@ import {
   AiOutlineUser,
   AiOutlineCrown,
   AiOutlineDrag,
+  AiOutlineInfoCircle,
   AiOutlineTeam,
 } from "react-icons/ai";
 import X from "@/components/game/X";
@@ -49,6 +50,7 @@ export function OnlineTicTacToe({
   const [room, setRoom] = useState<RoomState | null>(null);
   const [yourSymbol, setYourSymbol] = useState<"X" | "O" | null>(null);
   const [message, setMessage] = useState("");
+  const [isRoomCardCollapsed, setIsRoomCardCollapsed] = useState(false);
 
   const xPlayer = room?.players.find((entry) => entry.symbol === "X") || null;
   const oPlayer = room?.players.find((entry) => entry.symbol === "O") || null;
@@ -233,83 +235,108 @@ export function OnlineTicTacToe({
         </h1>
       </div>
       <div>
-        <motion.div drag className="room-float-card">
-          <div className="room-float-header">
-            <span className="room-float-anchor">
-              <AiOutlineDrag /> drag
-            </span>
-            <span className="room-float-title">
-              {room ? `${room.name} (${room.code})` : "Loading room"}
-            </span>
-          </div>
-
-          <div className="room-score-strip">
-            <span className="room-float-line">
-              {roomStatusIcon} {status}
-            </span>
-          </div>
-
-          <div className="room-joined">
-            <p className="room-joined-title">
-              <AiOutlineTeam /> Joined Players
-            </p>
-            {room?.players && room.players.length > 0 ? (
-              room.players.map((joinedPlayer) => (
-                <p key={joinedPlayer.playerId} className="room-joined-line">
-                  {joinedPlayer.symbol === "X" ? <AiOutlinePlayCircle /> : <AiOutlineCheckCircle />} {joinedPlayer.name} ({joinedPlayer.symbol})
-                </p>
-              ))
+        <motion.div drag dragMomentum={false} className="room-float-drag-root">
+          <div className={`room-float-card${isRoomCardCollapsed ? " room-float-card-collapsed" : ""}`}>
+            {isRoomCardCollapsed ? (
+              <button
+                className="room-float-collapsed-center"
+                type="button"
+                onClick={() => setIsRoomCardCollapsed(false)}
+                aria-label="Expand room info"
+                title="Expand room info"
+              >
+                <AiOutlineInfoCircle />
+              </button>
             ) : (
-              <p className="room-joined-line">
-                <AiOutlineClockCircle /> Waiting...
-              </p>
-            )}
-          </div>
-
-          <div className="room-float-actions">
-            <motion.button
-              className="reset"
-              onClick={() => void handleRematch()}
-              variants={buttonVariants}
-              initial="initial"
-              whileHover="hover"
-              whileTap="pressed"
-              type="button"
-            >
-              <IconContext.Provider value={{ size: "1.5em", style: { marginRight: "5px" } }}>
-                <AiOutlineReload />
-              </IconContext.Provider>
-              rematch
-            </motion.button>
-
-            <motion.button
-              className="mute"
-              onClick={onToggleMusic}
-              variants={buttonVariants}
-              initial="initial"
-              whileHover="hover"
-              whileTap="pressed"
-              type="button"
-            >
-              <IconContext.Provider value={{ size: "1.5em", style: { marginRight: "5px" } }}>
-                <div className="flex ">
-                  <AiOutlineSound /> {isMusicMuted ? <p>off</p> : ""}
+              <>
+                <div className="room-float-header">
+                  <span className="room-float-anchor">
+                    <AiOutlineDrag /> drag
+                  </span>
+                  <span className="room-float-title">
+                    {room ? `${room.name} (${room.code})` : "Loading room"}
+                  </span>
+                  <button
+                    className="room-float-toggle-btn"
+                    type="button"
+                    onClick={() => setIsRoomCardCollapsed(true)}
+                    aria-label="Collapse room info"
+                    title="Collapse room info"
+                  >
+                    <AiOutlineInfoCircle />
+                  </button>
                 </div>
-              </IconContext.Provider>
-              mute
-            </motion.button>
 
-            <motion.button
-              className="reset room-leave-round"
-              onClick={() => void handleLeave()}
-              variants={buttonVariants}
-              initial="initial"
-              whileHover="hover"
-              whileTap="pressed"
-              type="button"
-            >
-              leave
-            </motion.button>
+                <div className="room-score-strip">
+                  <span className="room-float-line">
+                    {roomStatusIcon} {status}
+                  </span>
+                </div>
+
+                <div className="room-joined">
+                  <p className="room-joined-title">
+                    <AiOutlineTeam /> Joined Players
+                  </p>
+                  {room?.players && room.players.length > 0 ? (
+                    room.players.map((joinedPlayer) => (
+                      <p key={joinedPlayer.playerId} className="room-joined-line">
+                        {joinedPlayer.symbol === "X" ? <AiOutlinePlayCircle /> : <AiOutlineCheckCircle />} {joinedPlayer.name} ({joinedPlayer.symbol})
+                      </p>
+                    ))
+                  ) : (
+                    <p className="room-joined-line">
+                      <AiOutlineClockCircle /> Waiting...
+                    </p>
+                  )}
+                </div>
+
+                <div className="room-float-actions">
+                  <motion.button
+                    className="reset"
+                    onClick={() => void handleRematch()}
+                    variants={buttonVariants}
+                    initial="initial"
+                    whileHover="hover"
+                    whileTap="pressed"
+                    type="button"
+                  >
+                    <IconContext.Provider value={{ size: "1.5em", style: { marginRight: "5px" } }}>
+                      <AiOutlineReload />
+                    </IconContext.Provider>
+                    rematch
+                  </motion.button>
+
+                  <motion.button
+                    className="mute"
+                    onClick={onToggleMusic}
+                    variants={buttonVariants}
+                    initial="initial"
+                    whileHover="hover"
+                    whileTap="pressed"
+                    type="button"
+                  >
+                    <IconContext.Provider value={{ size: "1.5em", style: { marginRight: "5px" } }}>
+                      <div className="flex ">
+                        <AiOutlineSound /> {isMusicMuted ? <p>off</p> : ""}
+                      </div>
+                    </IconContext.Provider>
+                    mute
+                  </motion.button>
+
+                  <motion.button
+                    className="reset room-leave-round"
+                    onClick={() => void handleLeave()}
+                    variants={buttonVariants}
+                    initial="initial"
+                    whileHover="hover"
+                    whileTap="pressed"
+                    type="button"
+                  >
+                    leave
+                  </motion.button>
+                </div>
+              </>
+            )}
           </div>
         </motion.div>
 

@@ -4,20 +4,24 @@ import type { CpuDifficulty } from "@/types/game";
 
 type SettingsScreenProps = {
   isMusicMuted: boolean;
+  musicVolume: number;
   enableAnimations: boolean;
   cpuDifficulty: CpuDifficulty;
   onBack: () => void;
   onToggleMusic: () => void;
+  onMusicVolumeChange: (volume: number) => void;
   onToggleAnimations: () => void;
   onCpuDifficultyChange: (difficulty: CpuDifficulty) => void;
 };
 
 export function SettingsScreen({
   isMusicMuted,
+  musicVolume,
   enableAnimations,
   cpuDifficulty,
   onBack,
   onToggleMusic,
+  onMusicVolumeChange,
   onToggleAnimations,
   onCpuDifficultyChange,
 }: SettingsScreenProps) {
@@ -40,6 +44,22 @@ export function SettingsScreen({
           <button className={classnames("lobby-btn", "custome-shadow")} type="button" onClick={onToggleMusic}>
             {isMusicMuted ? "Muted" : "On"}
           </button>
+        </div>
+
+        <div className="settings-item settings-item-volume">
+          <p>Volume</p>
+          <div className="settings-volume">
+            <input
+              className="settings-slider"
+              type="range"
+              min={0}
+              max={100}
+              step={1}
+              value={musicVolume}
+              onChange={(event) => onMusicVolumeChange(Number(event.target.value))}
+            />
+            <span className="settings-volume-value">{musicVolume}%</span>
+          </div>
         </div>
 
         <div className="settings-item">
