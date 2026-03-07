@@ -328,6 +328,62 @@ h1 span:last-child {
   margin-bottom: 0.75rem;
 }
 
+.settings-history-list {
+  margin-top: -0.2rem;
+  margin-bottom: 0.75rem;
+  border: 2px solid rgba(0, 0, 0, 0.4);
+  border-radius: 12px;
+  padding: 0.45rem;
+  background: rgba(255, 255, 255, 0.22);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.settings-history-item {
+  list-style: none;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.2rem 0.55rem;
+  align-items: center;
+  border: 1px solid rgba(0, 0, 0, 0.35);
+  border-radius: 9px;
+  padding: 0.35rem 0.5rem;
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.settings-history-outcome {
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.45);
+  padding: 0.08rem 0.42rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-shadow: none;
+  color: black;
+}
+
+.settings-history-outcome.outcome-win {
+  background: rgba(107, 255, 122, 0.7);
+}
+
+.settings-history-outcome.outcome-loss {
+  background: rgba(255, 115, 115, 0.7);
+}
+
+.settings-history-outcome.outcome-draw {
+  background: rgba(255, 233, 124, 0.7);
+}
+
+.settings-history-opponent {
+  font-weight: 600;
+}
+
+.settings-history-time {
+  grid-column: 1 / span 2;
+  font-size: 0.82rem;
+  opacity: 0.86;
+}
+
 .save-indicator {
   position: fixed;
   top: 3.3rem;

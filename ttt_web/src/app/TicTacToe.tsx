@@ -3,7 +3,12 @@
 import React from "react";
 import { CpuTicTacToe } from "@/features/game/CpuTicTacToe";
 import { OnlineTicTacToe } from "@/features/game/OnlineTicTacToe";
-import type { CpuDifficulty, GameMode, PlayerProfile } from "@/types/game";
+import type {
+  CpuDifficulty,
+  GameMode,
+  MatchResultEvent,
+  PlayerProfile,
+} from "@/types/game";
 
 type TicTacToeProps = {
   mode: GameMode;
@@ -13,6 +18,7 @@ type TicTacToeProps = {
   onToggleMusic: () => void;
   runWithLoader: <T>(task: () => Promise<T>, showLoader?: boolean) => Promise<T>;
   onProfileUpdate: (player: PlayerProfile) => void;
+  onMatchComplete: (result: MatchResultEvent) => void;
   onLeave: () => void;
   cpuDifficulty: CpuDifficulty;
 };
@@ -25,6 +31,7 @@ const TicTacToe: React.FC<TicTacToeProps> = ({
   onToggleMusic,
   runWithLoader,
   onProfileUpdate,
+  onMatchComplete,
   onLeave,
   cpuDifficulty,
 }) => {
@@ -35,6 +42,7 @@ const TicTacToe: React.FC<TicTacToeProps> = ({
         isMusicMuted={isMusicMuted}
         onToggleMusic={onToggleMusic}
         difficulty={cpuDifficulty}
+        onMatchComplete={onMatchComplete}
         onLeave={onLeave}
       />
     );
@@ -52,6 +60,7 @@ const TicTacToe: React.FC<TicTacToeProps> = ({
       onToggleMusic={onToggleMusic}
       runWithLoader={runWithLoader}
       onProfileUpdate={onProfileUpdate}
+      onMatchComplete={onMatchComplete}
       onLeave={onLeave}
     />
   );

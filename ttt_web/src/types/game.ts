@@ -1,8 +1,21 @@
-export type Screen = "home" | "lobby" | "leaderboard" | "settings" | "game";
+export type Screen = "home" | "lobby" | "leaderboard" | "history" | "settings" | "game";
 
 export type GameMode = "online" | "cpu";
 
 export type CpuDifficulty = "easy" | "medium" | "hard";
+
+export type MatchOutcome = "win" | "loss" | "draw";
+
+export type MatchResultEvent = {
+  mode: GameMode;
+  outcome: MatchOutcome;
+  opponent: string;
+};
+
+export type MatchHistoryEntry = MatchResultEvent & {
+  id: string;
+  finishedAt: string;
+};
 
 export type PlayerProfile = {
   playerId: string;

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { IconContext } from "react-icons";
 import {
@@ -21,13 +21,14 @@ import O from "@/components/game/O";
 import PlayerO from "@/components/game/player/PlayerO";
 import PlayerX from "@/components/game/player/PlayerX";
 import { evaluateBoard, getCpuMove } from "@/lib/cpu";
-import type { CpuDifficulty, PlayerProfile } from "@/types/game";
+import type { CpuDifficulty, MatchResultEvent, PlayerProfile } from "@/types/game";
 
 type CpuTicTacToeProps = {
   player: PlayerProfile;
   isMusicMuted: boolean;
   onToggleMusic: () => void;
   difficulty: CpuDifficulty;
+  onMatchComplete: (result: MatchResultEvent) => void;
   onLeave: () => void;
 };
 
@@ -45,12 +46,14 @@ export function CpuTicTacToe({
   isMusicMuted,
   onToggleMusic,
   difficulty,
+  onMatchComplete,
   onLeave,
 }: CpuTicTacToeProps) {
   const [board, setBoard] = useState<Array<Symbol | null>>(EMPTY_BOARD);
   const [turn, setTurn] = useState<Symbol>("X");
   const [winner, setWinner] = useState<Symbol | "draw" | null>(null);
   const [isRoomCardCollapsed, setIsRoomCardCollapsed] = useState(false);
+  const lastReportedWinnerRef = useRef<Symbol | "draw" | null>(null);
 
   const status = useMemo(() => {
     if (winner === "draw") {
@@ -106,6 +109,23 @@ export function CpuTicTacToe({
     setTurn("X");
     setWinner(null);
   };
+
+  useEffect(() => {
+    if (winner === null) {
+      lastReportedWinnerRef.current = null;
+      return;
+    }
+    if (lastReportedWinnerRef.current === winner) {
+      return;
+    }
+
+    lastReportedWinnerRef.current = winner;
+    onMatchComplete({
+      mode: "cpu",
+      outcome: winner === "draw" ? "draw" : winner === "X" ? "win" : "loss",
+      opponent: `CPU (${difficulty})`,
+    });
+  }, [difficulty, onMatchComplete, winner]);
 
   useEffect(() => {
     if (turn !== "O" || winner !== null) {

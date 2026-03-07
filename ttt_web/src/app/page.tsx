@@ -7,6 +7,7 @@ import { IconContext } from "react-icons";
 import { AiFillGithub, AiFillLinkedin } from "react-icons/ai";
 import TicTacToe from "./TicTacToe";
 import { AppLoader } from "@/features/home/AppLoader";
+import { HistoryScreen } from "@/features/home/HistoryScreen";
 import { LeaderboardScreen } from "@/features/home/LeaderboardScreen";
 import { LobbyScreen } from "@/features/home/LobbyScreen";
 import { MainMenu } from "@/features/home/MainMenu";
@@ -18,6 +19,8 @@ import type {
   CpuDifficulty,
   GameMode,
   LeaderboardPlayer,
+  MatchHistoryEntry,
+  MatchResultEvent,
   PlayerProfile,
   PublicRoom,
   RoomPayload,
@@ -63,6 +66,7 @@ export default function Home() {
   const [saveIndicator, setSaveIndicator] = useState("");
   const [showSaveTip, setShowSaveTip] = useState(false);
   const [dontShowSaveTipAgain, setDontShowSaveTipAgain] = useState(false);
+  const [matchHistory, setMatchHistory] = useState<MatchHistoryEntry[]>([]);
   const saveIndicatorTimeoutRef = useRef<number | null>(null);
 
   const { activeRequests, runWithLoader, callApi } = useApiClient();
@@ -136,6 +140,38 @@ export default function Home() {
       };
     } catch (_error) {
       return null;
+    }
+  };
+
+  const parseMatchHistory = (rawValue: string | null): MatchHistoryEntry[] => {
+    if (!rawValue) {
+      return [];
+    }
+
+    try {
+      const parsed = JSON.parse(rawValue);
+      if (!Array.isArray(parsed)) {
+        return [];
+      }
+
+      const safeEntries = parsed.filter((entry): entry is MatchHistoryEntry => {
+        return (
+          Boolean(entry) &&
+          typeof entry === "object" &&
+          typeof (entry as MatchHistoryEntry).id === "string" &&
+          typeof (entry as MatchHistoryEntry).finishedAt === "string" &&
+          ((entry as MatchHistoryEntry).mode === "online" ||
+            (entry as MatchHistoryEntry).mode === "cpu") &&
+          ((entry as MatchHistoryEntry).outcome === "win" ||
+            (entry as MatchHistoryEntry).outcome === "loss" ||
+            (entry as MatchHistoryEntry).outcome === "draw") &&
+          typeof (entry as MatchHistoryEntry).opponent === "string"
+        );
+      });
+
+      return safeEntries.slice(0, 20);
+    } catch (_error) {
+      return [];
     }
   };
 
@@ -221,6 +257,28 @@ export default function Home() {
     setLastLocalSavedAt(payload.savedAt);
     showSaveIndicator("Local save loaded");
     setMessage("Loaded local save data");
+  }, [showSaveIndicator]);
+
+  const recordMatchResult = useCallback((result: MatchResultEvent) => {
+    const entry: MatchHistoryEntry = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      finishedAt: new Date().toISOString(),
+      mode: result.mode,
+      outcome: result.outcome,
+      opponent: result.opponent,
+    };
+
+    setMatchHistory((currentValue) => {
+      const nextValue = [entry, ...currentValue].slice(0, 20);
+      window.localStorage.setItem(STORAGE_KEYS.matchHistory, JSON.stringify(nextValue));
+      return nextValue;
+    });
+  }, []);
+
+  const clearMatchHistory = useCallback(() => {
+    setMatchHistory([]);
+    window.localStorage.removeItem(STORAGE_KEYS.matchHistory);
+    showSaveIndicator("Match history cleared");
   }, [showSaveIndicator]);
 
   const refreshPublicRooms = async () => {
@@ -363,6 +421,7 @@ export default function Home() {
       setHasLocalSave(true);
       setLastLocalSavedAt(savedBackup.savedAt);
     }
+    setMatchHistory(parseMatchHistory(window.localStorage.getItem(STORAGE_KEYS.matchHistory)));
     const shouldHideSaveTip = window.localStorage.getItem(STORAGE_KEYS.hideSaveTip);
     setShowSaveTip(shouldHideSaveTip !== "true");
 
@@ -446,6 +505,7 @@ export default function Home() {
             });
             setScreen("leaderboard");
           }}
+          onHistory={() => setScreen("history")}
           onSettings={() => setScreen("settings")}
         />
       );
@@ -498,6 +558,16 @@ export default function Home() {
               setMessage("Could not refresh leaderboard");
             });
           }}
+        />
+      );
+    }
+
+    if (screen === "history") {
+      return (
+        <HistoryScreen
+          history={matchHistory}
+          onBack={() => setScreen("home")}
+          onClear={clearMatchHistory}
         />
       );
     }
@@ -557,6 +627,7 @@ export default function Home() {
           onProfileUpdate={(updatedPlayer) => {
             setPlayer(updatedPlayer);
           }}
+          onMatchComplete={recordMatchResult}
           onLeave={() => {
             setActiveRoomCode(null);
             setGameMode("online");

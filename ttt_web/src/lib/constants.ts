@@ -9,5 +9,6 @@ export const STORAGE_KEYS = {
   enableAnimations: "ttt_enable_animations",
   cpuDifficulty: "ttt_cpu_difficulty",
   localBackup: "ttt_local_backup_v1",
+  matchHistory: "ttt_match_history_v1",
   hideSaveTip: "ttt_hide_save_tip",
 };

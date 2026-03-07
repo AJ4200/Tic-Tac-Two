@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { IconContext } from "react-icons";
 import {
@@ -20,7 +20,12 @@ import O from "@/components/game/O";
 import PlayerO from "@/components/game/player/PlayerO";
 import PlayerX from "@/components/game/player/PlayerX";
 import { API_BASE_URL } from "@/lib/constants";
-import type { PlayerProfile, RoomState, RoomStatePayload } from "@/types/game";
+import type {
+  MatchResultEvent,
+  PlayerProfile,
+  RoomState,
+  RoomStatePayload,
+} from "@/types/game";
 
 type OnlineTicTacToeProps = {
   roomCode: string;
@@ -29,6 +34,7 @@ type OnlineTicTacToeProps = {
   onToggleMusic: () => void;
   runWithLoader: <T>(task: () => Promise<T>, showLoader?: boolean) => Promise<T>;
   onProfileUpdate: (player: PlayerProfile) => void;
+  onMatchComplete: (result: MatchResultEvent) => void;
   onLeave: () => void;
 };
 
@@ -45,12 +51,14 @@ export function OnlineTicTacToe({
   onToggleMusic,
   runWithLoader,
   onProfileUpdate,
+  onMatchComplete,
   onLeave,
 }: OnlineTicTacToeProps) {
   const [room, setRoom] = useState<RoomState | null>(null);
   const [yourSymbol, setYourSymbol] = useState<"X" | "O" | null>(null);
   const [message, setMessage] = useState("");
   const [isRoomCardCollapsed, setIsRoomCardCollapsed] = useState(false);
+  const lastReportedResultRef = useRef<string | null>(null);
 
   const xPlayer = room?.players.find((entry) => entry.symbol === "X") || null;
   const oPlayer = room?.players.find((entry) => entry.symbol === "O") || null;
@@ -213,6 +221,37 @@ export function OnlineTicTacToe({
       window.clearInterval(intervalId);
     };
   }, [roomCode, player.playerId]);
+
+  useEffect(() => {
+    if (!room || room.winner === null) {
+      lastReportedResultRef.current = null;
+      return;
+    }
+
+    const playerSymbol =
+      yourSymbol || room.players.find((entry) => entry.playerId === player.playerId)?.symbol || null;
+    const resultKey = `${room.code}:${room.winner}:${playerSymbol ?? "none"}`;
+    if (lastReportedResultRef.current === resultKey) {
+      return;
+    }
+
+    const outcome =
+      room.winner === "draw"
+        ? "draw"
+        : playerSymbol && room.winner === playerSymbol
+          ? "win"
+          : "loss";
+    const opponent = playerSymbol
+      ? room.players.find((entry) => entry.symbol !== playerSymbol)?.name || "Opponent"
+      : "Opponent";
+
+    lastReportedResultRef.current = resultKey;
+    onMatchComplete({
+      mode: "online",
+      outcome,
+      opponent,
+    });
+  }, [onMatchComplete, player.playerId, room, yourSymbol]);
 
   const roomStatusIcon =
     room?.status === "waiting" ? (

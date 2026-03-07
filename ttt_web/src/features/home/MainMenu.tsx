@@ -1,11 +1,17 @@
 import classnames from "classnames";
 import { motion } from "framer-motion";
-import { AiFillPlayCircle, AiFillSetting, AiOutlineTrophy } from "react-icons/ai";
+import {
+  AiFillPlayCircle,
+  AiFillSetting,
+  AiOutlineHistory,
+  AiOutlineTrophy,
+} from "react-icons/ai";
 
 type MainMenuProps = {
   enableAnimations: boolean;
   onPlay: () => void;
   onLeaderboard: () => void;
+  onHistory: () => void;
   onSettings: () => void;
 };
 
@@ -13,6 +19,7 @@ export function MainMenu({
   enableAnimations,
   onPlay,
   onLeaderboard,
+  onHistory,
   onSettings,
 }: MainMenuProps) {
   return (
@@ -37,6 +44,9 @@ export function MainMenu({
           onClick={onLeaderboard}
         >
           <AiOutlineTrophy /> Leaderboard
+        </button>
+        <button className={classnames("main-menu-btn", "custome-shadow")} type="button" onClick={onHistory}>
+          <AiOutlineHistory /> History
         </button>
         <button className={classnames("main-menu-btn", "custome-shadow")} type="button" onClick={onSettings}>
           <AiFillSetting /> Settings
