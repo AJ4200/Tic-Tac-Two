@@ -87,6 +87,10 @@ export function OnlineTicTacToe({
   const canPlayTurn = Boolean(
     room && yourSymbol && room.status === "playing" && room.turn === yourSymbol
   );
+  const xResult =
+    room?.winner === "X" ? "winner" : room?.winner === "O" ? "loser" : "neutral";
+  const oResult =
+    room?.winner === "O" ? "winner" : room?.winner === "X" ? "loser" : "neutral";
 
   const callApi = async <T,>(
     path: string,
@@ -367,6 +371,7 @@ export function OnlineTicTacToe({
         wins={xPlayer?.wins || 0}
         losses={xPlayer?.losses || 0}
         draws={xPlayer?.draws || 0}
+        result={xResult}
         mood={
           room?.winner === "X" ? (
             <span className="player-state winner">
@@ -389,6 +394,7 @@ export function OnlineTicTacToe({
         wins={oPlayer?.wins || 0}
         losses={oPlayer?.losses || 0}
         draws={oPlayer?.draws || 0}
+        result={oResult}
         mood={
           room?.winner === "O" ? (
             <span className="player-state winner">

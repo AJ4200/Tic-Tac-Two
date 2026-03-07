@@ -674,6 +674,8 @@ h1 span:last-child {
   border: 10px solid;
 transform: skewX(-5deg);
  animation: playerAnimation 5s infinite;
+  transition: scale 260ms ease, filter 260ms ease, opacity 260ms ease,
+    box-shadow 260ms ease;
 }
 .plx
 {
@@ -704,6 +706,25 @@ transform: skewX(-5deg);
   width: 80px;
   height: 80px;
   object-fit: cover;
+}
+
+.player-result-neutral {
+  scale: 1;
+}
+
+.player-result-winner {
+  scale: 1.1;
+  box-shadow: 0 0 0 3px rgba(255, 233, 124, 0.65), 0 10px 22px rgba(0, 0, 0, 0.35);
+}
+
+.player-result-loser {
+  scale: 0.86;
+  filter: grayscale(1) saturate(0.25);
+  opacity: 0.65;
+}
+
+.motion-off .player {
+  transition: none !important;
 }
 
 

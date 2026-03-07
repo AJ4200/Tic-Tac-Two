@@ -73,6 +73,8 @@ export function CpuTicTacToe({
   const roomStatusIcon = winner ? <AiOutlineCheckCircle /> : turn === "X" ? <AiOutlinePlayCircle /> : <AiOutlineClockCircle />;
 
   const canPlay = turn === "X" && winner === null;
+  const xResult = winner === "X" ? "winner" : winner === "O" ? "loser" : "neutral";
+  const oResult = winner === "O" ? "winner" : winner === "X" ? "loser" : "neutral";
 
   const applyBoardState = (nextBoard: Array<Symbol | null>, nextTurn: Symbol) => {
     const result = evaluateBoard(nextBoard);
@@ -265,6 +267,7 @@ export function CpuTicTacToe({
         wins={player.wins}
         losses={player.losses}
         draws={player.draws}
+        result={xResult}
         mood={
           winner === "X" ? (
             <span className="player-state winner">
@@ -283,6 +286,7 @@ export function CpuTicTacToe({
         wins={0}
         losses={0}
         draws={0}
+        result={oResult}
         mood={
           winner === "O" ? (
             <span className="player-state winner">

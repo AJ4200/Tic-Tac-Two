@@ -9,6 +9,7 @@ interface PlayerOProps {
   losses: number;
   draws: number;
   mood: React.ReactNode;
+  result?: "winner" | "loser" | "neutral";
 }
 
 const PlayerO: React.FC<PlayerOProps> = ({
@@ -18,8 +19,9 @@ const PlayerO: React.FC<PlayerOProps> = ({
   losses,
   draws,
   mood,
+  result = "neutral",
 }) => (
-  <div className={classnames("fixed right-10 flex-col", "player plo")}>
+  <div className={classnames("fixed right-10 flex-col", "player plo", `player-result-${result}`)}>
     <div>
       <img
         src={picture}
