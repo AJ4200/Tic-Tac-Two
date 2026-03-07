@@ -385,6 +385,14 @@ h1 span:last-child {
   z-index: 80;
 }
 
+.app-loader-corner {
+  position: fixed;
+  left: 0.75rem;
+  bottom: 0.75rem;
+  z-index: 60;
+  pointer-events: none;
+}
+
 .app-loader-card {
   display: flex;
   align-items: center;
@@ -394,6 +402,16 @@ h1 span:last-child {
   padding: 0.8rem 1.2rem;
   background: linear-gradient(130deg, #e73c7e, #23a6d5, #23d5ab);
   color: white;
+}
+
+.app-loader-card-subtle {
+  gap: 0.45rem;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  padding: 0.4rem 0.7rem;
+  background: rgba(16, 18, 26, 0.72);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
+  font-size: 0.8rem;
 }
 
 .loader-spin {

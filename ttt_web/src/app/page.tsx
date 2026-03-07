@@ -585,7 +585,7 @@ export default function Home() {
     >
       {!isInMatch ? renderTopBar() : null}
       {renderScreen()}
-      <AppLoader active={activeRequests > 0} />
+      <AppLoader active={activeRequests > 0} subtle={isInMatch} />
       {saveIndicator ? <div className="save-indicator">{saveIndicator}</div> : null}
       {showSaveTip ? (
         <div className="save-tip-card">

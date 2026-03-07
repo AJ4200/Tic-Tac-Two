@@ -2,18 +2,19 @@ import { AiOutlineLoading3Quarters } from "react-icons/ai";
 
 type AppLoaderProps = {
   active: boolean;
+  subtle?: boolean;
 };
 
-export function AppLoader({ active }: AppLoaderProps) {
+export function AppLoader({ active, subtle = false }: AppLoaderProps) {
   if (!active) {
     return null;
   }
 
   return (
-    <div className="app-loader-overlay">
-      <div className="app-loader-card">
+    <div className={subtle ? "app-loader-corner" : "app-loader-overlay"}>
+      <div className={subtle ? "app-loader-card app-loader-card-subtle" : "app-loader-card"}>
         <AiOutlineLoading3Quarters className="loader-spin" />
-        <span>Syncing Match Data...</span>
+        <span>{subtle ? "Syncing..." : "Syncing Match Data..."}</span>
       </div>
     </div>
   );
