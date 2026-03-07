@@ -189,15 +189,16 @@ export default function Home() {
     setCpuDifficulty(payload.cpuDifficulty);
     window.localStorage.setItem(STORAGE_KEYS.cpuDifficulty, payload.cpuDifficulty);
 
-    if (payload.player) {
+    const savedPlayer = payload.player;
+    if (savedPlayer) {
       setPlayer((currentValue) => {
         if (currentValue) {
           return {
             ...currentValue,
-            name: payload.player?.name || currentValue.name,
-            wins: payload.player?.wins ?? currentValue.wins,
-            losses: payload.player?.losses ?? currentValue.losses,
-            draws: payload.player?.draws ?? currentValue.draws,
+            name: savedPlayer.name || currentValue.name,
+            wins: savedPlayer.wins,
+            losses: savedPlayer.losses,
+            draws: savedPlayer.draws,
           };
         }
 
@@ -208,10 +209,10 @@ export default function Home() {
 
         return {
           playerId: savedPlayerId,
-          name: payload.player.name,
-          wins: payload.player.wins,
-          losses: payload.player.losses,
-          draws: payload.player.draws,
+          name: savedPlayer.name,
+          wins: savedPlayer.wins,
+          losses: savedPlayer.losses,
+          draws: savedPlayer.draws,
         };
       });
     }
